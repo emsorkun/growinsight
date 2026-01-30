@@ -11,8 +11,15 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Missing brands API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch missing brands' },
+      { 
+        success: false, 
+        error: 'Failed to fetch missing brands',
+        details: errorMessage.includes('BigQuery configuration') 
+          ? errorMessage 
+          : (process.env.NODE_ENV === 'development' ? errorMessage : 'Check server logs for details')
+      },
       { status: 500 }
     );
   }

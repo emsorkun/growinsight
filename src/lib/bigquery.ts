@@ -7,30 +7,54 @@ function getBigQueryClient(): BigQuery {
   if (!bigquery) {
     const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
     
+    if (!projectId) {
+      console.error('Missing GOOGLE_CLOUD_PROJECT_ID environment variable');
+      throw new Error('BigQuery configuration error: Missing project ID. Please set GOOGLE_CLOUD_PROJECT_ID environment variable.');
+    }
+    
     // Support both file path (local) and JSON string (Railway/cloud) credentials
     const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
     const credentialsFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    
+    console.log('BigQuery initialization:', {
+      projectId,
+      hasCredentialsJson: !!credentialsJson,
+      hasCredentialsFile: !!credentialsFile,
+      credentialsJsonLength: credentialsJson?.length || 0,
+    });
     
     if (credentialsJson) {
       // Parse JSON string credentials (for Railway/cloud deployments)
       try {
         const credentials = JSON.parse(credentialsJson);
+        
+        // Validate required fields in credentials
+        if (!credentials.client_email || !credentials.private_key) {
+          throw new Error('Invalid credentials: missing client_email or private_key');
+        }
+        
+        console.log('Using GOOGLE_CREDENTIALS_JSON with client_email:', credentials.client_email);
+        
         bigquery = new BigQuery({
           projectId,
           credentials,
         });
       } catch (error) {
-        console.error('Failed to parse GOOGLE_CREDENTIALS_JSON:', error);
-        throw new Error('Invalid GOOGLE_CREDENTIALS_JSON format');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
+        console.error('Failed to parse GOOGLE_CREDENTIALS_JSON:', errorMessage);
+        throw new Error(`BigQuery configuration error: Invalid GOOGLE_CREDENTIALS_JSON format - ${errorMessage}`);
       }
     } else if (credentialsFile) {
       // Use file path (for local development with Docker)
+      console.log('Using GOOGLE_APPLICATION_CREDENTIALS file:', credentialsFile);
       bigquery = new BigQuery({
         projectId,
         keyFilename: credentialsFile,
       });
     } else {
       // Fall back to default credentials (GCP environment)
+      console.log('Using default GCP credentials (no explicit credentials provided)');
+      console.warn('Warning: No explicit credentials provided. This may fail outside of GCP environment.');
       bigquery = new BigQuery({ projectId });
     }
   }

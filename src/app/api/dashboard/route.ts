@@ -42,11 +42,27 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Dashboard API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log full details server-side
+    console.error('Dashboard API full error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      env: {
+        hasProjectId: !!process.env.GOOGLE_CLOUD_PROJECT_ID,
+        hasCredentialsJson: !!process.env.GOOGLE_CREDENTIALS_JSON,
+        hasCredentialsFile: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+      }
+    });
+    
     return NextResponse.json(
       { 
         success: false, 
         error: 'Failed to fetch dashboard data',
-        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        // Include sanitized error message to help debug production issues
+        details: errorMessage.includes('BigQuery configuration') 
+          ? errorMessage 
+          : (process.env.NODE_ENV === 'development' ? errorMessage : 'Check server logs for details')
       },
       { status: 500 }
     );
