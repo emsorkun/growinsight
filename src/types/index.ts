@@ -1,0 +1,179 @@
+// Channel types
+export type Channel = 'Talabat' | 'Deliveroo' | 'Careem' | 'Noon' | 'Keeta';
+
+export const CHANNEL_COLORS: Record<Channel, string> = {
+  Talabat: '#F97316',
+  Deliveroo: '#06B6D4',
+  Careem: '#10B981',
+  Noon: '#FDE047',
+  Keeta: '#6B7280',
+};
+
+// Data models
+export interface SalesData {
+  channel: Channel;
+  city: string;
+  area: string;
+  monthYear: string;
+  month: string;
+  year: string;
+  location: string;
+  cuisine: string;
+  orders: number;
+  netSales: number;
+  grossSales: number;
+  adsSpend: number;
+  discountSpend: number;
+  adsReturn: number;
+}
+
+export interface AggregatedData {
+  channel: Channel;
+  orders: number;
+  netSales: number;
+  grossSales: number;
+  adsSpend: number;
+  discountSpend: number;
+  adsReturn: number;
+  roas: number;
+  aov: number;
+}
+
+export interface MarketShareByArea {
+  area: string;
+  marketShare: Record<Channel, number>;
+}
+
+export interface MarketShareByAreaExtended {
+  area: string;
+  city: string;
+  marketShare: Record<Channel, number>;
+  totalOrders: number;
+  cuisineCount: number;
+  signalStrength: number;
+}
+
+export interface CuisineDetailByArea {
+  cuisine: string;
+  marketShare: Record<Channel, number>;
+  totalOrders: number;
+}
+
+export interface AreaMonthlyTrend {
+  month: string;
+  marketShare: Record<Channel, number>;
+}
+
+export interface MarketShareByCuisine {
+  cuisine: string;
+  marketShare: Record<Channel, number>;
+}
+
+export interface MonthlyMarketShare {
+  month: string;
+  marketShare: Record<Channel, number>;
+}
+
+export interface MissingBrand {
+  id: string;
+  name: string;
+  cuisine: string;
+  location: string;
+  rating: number;
+  locationCount: number;
+}
+
+// Filter types
+export interface FilterOptions {
+  months: string[];
+  cities: string[];
+  areas: string[];
+  cuisines: string[];
+}
+
+export interface FilterState {
+  selectedMonth: string;
+  selectedCity: string;
+  selectedArea: string;
+  selectedCuisine: string;
+}
+
+// Auth types
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export interface DashboardSummary {
+  totalOrders: number;
+  totalNetSales: number;
+  totalGrossSales: number;
+  totalAdsSpend: number;
+  totalDiscountSpend: number;
+  channelData: AggregatedData[];
+  monthlyData: MonthlyMarketShare[];
+}
+
+// Chart data types
+export interface PieChartData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface BarChartData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+// Cuisine icons mapping
+export const CUISINE_ICONS: Record<string, string> = {
+  'American': '🍔',
+  'Fast Food': '🍔',
+  'Asian': '🥢',
+  'Beverages': '☕',
+  'Breakfast': '🥐',
+  'Bakery': '🥐',
+  'Desserts': '🍰',
+  'Sweets': '🍰',
+  'Healthy': '🥗',
+  'Special Diets': '🥗',
+  'Indian': '🔥',
+  'International': '🌍',
+  'Italian': '🍝',
+  'Mexican': '🌮',
+  'Middle Eastern': '🥙',
+  'Seafood': '🐟',
+  'Shawarma': '🥙',
+  'Soup': '🍜',
+  'Turkish': '🥘',
+  'default': '🍽️',
+};
+
+export function getCuisineIcon(cuisine: string): string {
+  const normalizedCuisine = cuisine.toLowerCase();
+  
+  for (const [key, icon] of Object.entries(CUISINE_ICONS)) {
+    if (normalizedCuisine.includes(key.toLowerCase())) {
+      return icon;
+    }
+  }
+  
+  return CUISINE_ICONS.default;
+}

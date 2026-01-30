@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  growinsight:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - GOOGLE_CLOUD_PROJECT_ID=vpc-host-prod-fn204-ex958
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/vpc-host-prod-fn204-ex958-654b99d94b5d.json
+      - JWT_SECRET=${JWT_SECRET:-growinsight-secret-key-change-in-production}
+    volumes:
+      - ./vpc-host-prod-fn204-ex958-654b99d94b5d.json:/app/vpc-host-prod-fn204-ex958-654b99d94b5d.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/auth/verify"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
