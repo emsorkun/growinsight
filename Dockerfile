@@ -32,8 +32,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy BigQuery credentials (should be mounted as secret in production)
-COPY --from=builder /app/vpc-host-prod-fn204-ex958-654b99d94b5d.json ./
+# Note: BigQuery credentials should be provided at runtime via:
+# - GOOGLE_APPLICATION_CREDENTIALS env var pointing to a mounted secret/volume
+# - Or GCP default credentials when running on GCP infrastructure
 
 # Set permissions
 USER nextjs
