@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BarChartData {
@@ -74,6 +74,16 @@ export function BarChartCard({ title, data, yAxisLabel, formatValue }: BarChartP
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
+                <LabelList 
+                  dataKey="value" 
+                  position="top" 
+                  formatter={(value: number) => formatValue ? formatValue(value) : value.toFixed(1)}
+                  style={{ 
+                    fill: 'var(--foreground)', 
+                    fontSize: 11,
+                    fontWeight: 500 
+                  }}
+                />
               </Bar>
             </RechartsBarChart>
           </ResponsiveContainer>

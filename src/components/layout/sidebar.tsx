@@ -9,12 +9,14 @@ import {
   LogOut,
   Menu,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -22,18 +24,35 @@ const navigation = [
   { name: 'Cuisine Level', href: '/cuisine-level', icon: UtensilsCrossed },
 ];
 
-function Logo() {
+// Context for sidebar state
+const SidebarContext = createContext<{
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
+}>({
+  isCollapsed: false,
+  setIsCollapsed: () => {},
+});
+
+export const useSidebar = () => useContext(SidebarContext);
+
+function Logo({ isCollapsed }: { isCollapsed: boolean }) {
   return (
-    <Link href="/dashboard" className="flex items-center gap-2 px-4 py-6">
+    <Link href="/dashboard" className={cn("flex items-center gap-2 py-6", isCollapsed ? "px-2 justify-center" : "px-4")}>
       <div className="flex items-center">
-        <span className="text-2xl font-bold text-[#1E40AF]">grow</span>
-        <span className="text-2xl font-bold text-[#06B6D4]">insight</span>
+        {isCollapsed ? (
+          <span className="text-2xl font-bold text-[#1E40AF]">g</span>
+        ) : (
+          <>
+            <span className="text-2xl font-bold text-[#1E40AF]">grow</span>
+            <span className="text-2xl font-bold text-[#06B6D4]">insight</span>
+          </>
+        )}
       </div>
     </Link>
   );
 }
 
-function NavItems({ onItemClick }: { onItemClick?: () => void }) {
+function NavItems({ onItemClick, isCollapsed }: { onItemClick?: () => void; isCollapsed?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -45,15 +64,17 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
             key={item.name}
             href={item.href}
             onClick={onItemClick}
+            title={isCollapsed ? item.name : undefined}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+              isCollapsed && 'justify-center px-2',
               isActive
                 ? 'bg-primary text-primary-foreground shadow-md'
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )}
           >
-            <item.icon className="h-5 w-5" />
-            {item.name}
+            <item.icon className="h-5 w-5 flex-shrink-0" />
+            {!isCollapsed && <span>{item.name}</span>}
           </Link>
         );
       })}
@@ -61,7 +82,7 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
   );
 }
 
-function UserInfo() {
+function UserInfo({ isCollapsed }: { isCollapsed: boolean }) {
   const { user, logout } = useAuthStore();
 
   const handleLogout = async () => {
@@ -72,6 +93,27 @@ function UserInfo() {
     }
     logout();
   };
+
+  if (isCollapsed) {
+    return (
+      <div className="border-t border-sidebar-border p-2">
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            {user?.name?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            title="Logout"
+            className="h-9 w-9 text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-t border-sidebar-border p-4">
@@ -99,11 +141,55 @@ function UserInfo() {
 }
 
 export function Sidebar() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Load collapsed state from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed');
+    if (stored !== null) {
+      setIsCollapsed(stored === 'true');
+    }
+  }, []);
+
+  // Save collapsed state to localStorage
+  const toggleCollapsed = () => {
+    const newValue = !isCollapsed;
+    setIsCollapsed(newValue);
+    localStorage.setItem('sidebar-collapsed', String(newValue));
+  };
+
   return (
-    <aside className="hidden lg:flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
-      <Logo />
-      <NavItems />
-      <UserInfo />
+    <aside
+      className={cn(
+        'hidden lg:flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300',
+        isCollapsed ? 'w-16' : 'w-64'
+      )}
+    >
+      <Logo isCollapsed={isCollapsed} />
+      <NavItems isCollapsed={isCollapsed} />
+      <UserInfo isCollapsed={isCollapsed} />
+      
+      {/* Collapse Toggle Button */}
+      <div className="border-t border-sidebar-border p-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleCollapsed}
+          className={cn(
+            'w-full text-muted-foreground hover:text-foreground',
+            isCollapsed ? 'px-2' : 'px-3'
+          )}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              <span>Collapse</span>
+            </>
+          )}
+        </Button>
+      </div>
     </aside>
   );
 }
@@ -121,13 +207,13 @@ export function MobileSidebar() {
       <SheetContent side="left" className="w-64 p-0">
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between p-4">
-            <Logo />
+            <Logo isCollapsed={false} />
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <NavItems onItemClick={() => setOpen(false)} />
-          <UserInfo />
+          <NavItems onItemClick={() => setOpen(false)} isCollapsed={false} />
+          <UserInfo isCollapsed={false} />
         </div>
       </SheetContent>
     </Sheet>

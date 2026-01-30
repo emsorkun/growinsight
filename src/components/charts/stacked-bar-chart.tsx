@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CHANNEL_COLORS, type Channel } from '@/types';
 
@@ -72,7 +72,19 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
                   dataKey={channel}
                   stackId="a"
                   fill={CHANNEL_COLORS[channel]}
-                />
+                >
+                  <LabelList
+                    dataKey={channel}
+                    position="center"
+                    formatter={(value: number) => value >= 5 ? `${value.toFixed(0)}%` : ''}
+                    style={{ 
+                      fill: '#fff', 
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                    }}
+                  />
+                </Bar>
               ))}
             </RechartsBarChart>
           </ResponsiveContainer>

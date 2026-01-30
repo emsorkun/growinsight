@@ -15,16 +15,62 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const CHANNELS: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
+
+type SortColumn = 'cuisine' | Channel;
+type SortDirection = 'asc' | 'desc';
+
+function SortableHeader({
+  column,
+  label,
+  currentSort,
+  currentDirection,
+  onSort,
+  className,
+  style,
+}: {
+  column: SortColumn;
+  label: React.ReactNode;
+  currentSort: SortColumn | null;
+  currentDirection: SortDirection;
+  onSort: (column: SortColumn) => void;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const isActive = currentSort === column;
+  
+  return (
+    <TableHead
+      className={cn('cursor-pointer select-none hover:bg-muted/50 transition-colors', className)}
+      style={style}
+      onClick={() => onSort(column)}
+    >
+      <div className="flex items-center justify-center gap-1">
+        <span style={style}>{label}</span>
+        {isActive ? (
+          currentDirection === 'asc' ? (
+            <ArrowUp className="h-3 w-3 flex-shrink-0" />
+          ) : (
+            <ArrowDown className="h-3 w-3 flex-shrink-0" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3 w-3 flex-shrink-0 opacity-50" />
+        )}
+      </div>
+    </TableHead>
+  );
+}
 
 export default function CuisineLevelPage() {
   const [data, setData] = useState<MarketShareByCuisine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const { selectedMonth, selectedCity, selectedArea } = useFilterStore();
 
@@ -59,12 +105,54 @@ export default function CuisineLevelPage() {
     fetchCuisineData();
   }, [fetchCuisineData]);
 
+  const handleSort = useCallback((column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  }, [sortColumn]);
+
   const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-    return data.filter((item) =>
-      item.cuisine.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [data, searchQuery]);
+    let result = data;
+    
+    // Apply search filter
+    if (searchQuery) {
+      result = result.filter((item) =>
+        item.cuisine.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply sorting
+    if (sortColumn) {
+      result = [...result].sort((a, b) => {
+        let aValue: number | string;
+        let bValue: number | string;
+        
+        if (sortColumn === 'cuisine') {
+          aValue = a.cuisine.toLowerCase();
+          bValue = b.cuisine.toLowerCase();
+        } else {
+          // Channel column
+          aValue = a.marketShare[sortColumn] || 0;
+          bValue = b.marketShare[sortColumn] || 0;
+        }
+        
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortDirection === 'asc' 
+            ? aValue.localeCompare(bValue) 
+            : bValue.localeCompare(aValue);
+        }
+        
+        return sortDirection === 'asc' 
+          ? (aValue as number) - (bValue as number) 
+          : (bValue as number) - (aValue as number);
+      });
+    }
+    
+    return result;
+  }, [data, searchQuery, sortColumn, sortDirection]);
 
   const getHighestChannel = (marketShare: Record<Channel, number>): Channel | null => {
     let highest: Channel | null = null;
@@ -118,11 +206,25 @@ export default function CuisineLevelPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[200px]">Cuisine</TableHead>
+                      <SortableHeader
+                        column="cuisine"
+                        label="Cuisine"
+                        currentSort={sortColumn}
+                        currentDirection={sortDirection}
+                        onSort={handleSort}
+                        className="w-[200px] text-left"
+                      />
                       {CHANNELS.map((channel) => (
-                        <TableHead key={channel} className="text-center">
-                          <span style={{ color: CHANNEL_COLORS[channel] }}>{channel}</span>
-                        </TableHead>
+                        <SortableHeader
+                          key={channel}
+                          column={channel}
+                          label={channel}
+                          currentSort={sortColumn}
+                          currentDirection={sortDirection}
+                          onSort={handleSort}
+                          className="text-center"
+                          style={{ color: CHANNEL_COLORS[channel] }}
+                        />
                       ))}
                     </TableRow>
                   </TableHeader>

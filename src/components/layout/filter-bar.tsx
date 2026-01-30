@@ -8,19 +8,76 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { ChevronDown } from 'lucide-react';
 
-export function FilterBar() {
+// Signal strength colors - green for high, red for low
+const SIGNAL_COLORS = {
+  active: ['#22C55E', '#84CC16', '#EAB308', '#F97316', '#EF4444'],
+  inactive: '#E5E7EB',
+};
+
+const SIGNAL_LABELS: Record<number, string> = {
+  1: 'Weak',
+  2: 'Fair',
+  3: 'Good',
+  4: 'Strong',
+  5: 'Excellent',
+};
+
+function SignalStrengthIndicator({ strength }: { strength: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((level) => (
+        <div
+          key={level}
+          className="w-1.5 rounded-sm"
+          style={{
+            height: `${8 + level * 3}px`,
+            backgroundColor:
+              level <= strength
+                ? SIGNAL_COLORS.active[level - 1]
+                : SIGNAL_COLORS.inactive,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface FilterBarProps {
+  showSignalStrength?: boolean;
+}
+
+export function FilterBar({ showSignalStrength = false }: FilterBarProps) {
   const {
     options,
     selectedMonth,
     selectedCity,
     selectedArea,
     selectedCuisine,
+    selectedSignalStrengths,
     setSelectedMonth,
     setSelectedCity,
     setSelectedArea,
     setSelectedCuisine,
+    toggleSignalStrength,
   } = useFilterStore();
+
+  const getSignalStrengthLabel = () => {
+    if (selectedSignalStrengths.length === 0) return 'All Signals';
+    if (selectedSignalStrengths.length === 5) return 'All Signals';
+    if (selectedSignalStrengths.length === 1) {
+      return `${selectedSignalStrengths[0]} - ${SIGNAL_LABELS[selectedSignalStrengths[0]]}`;
+    }
+    return `${selectedSignalStrengths.length} selected`;
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4">
@@ -91,6 +148,35 @@ export function FilterBar() {
           </SelectContent>
         </Select>
       </div>
+
+      {showSignalStrength && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground">Signal Strength</label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[160px] justify-between font-normal">
+                <span className="truncate">{getSignalStrengthLabel()}</span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[200px]">
+              {[1, 2, 3, 4, 5].map((strength) => (
+                <DropdownMenuCheckboxItem
+                  key={strength}
+                  checked={selectedSignalStrengths.includes(strength)}
+                  onCheckedChange={() => toggleSignalStrength(strength)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <div className="flex items-center gap-3">
+                    <SignalStrengthIndicator strength={strength} />
+                    <span>{strength} - {SIGNAL_LABELS[strength]}</span>
+                  </div>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 }

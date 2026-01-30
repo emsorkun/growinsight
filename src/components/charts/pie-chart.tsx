@@ -1,6 +1,6 @@
 'use client';
 
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface PieChartData {
@@ -55,6 +55,27 @@ export function PieChartCard({ title, data }: PieChartProps) {
                 dataKey="value"
                 nameKey="name"
                 strokeWidth={0}
+                label={({ cx, cy, midAngle, outerRadius, value }) => {
+                  if (value < 5) return null; // Hide labels for very small slices
+                  const RADIAN = Math.PI / 180;
+                  const radius = outerRadius + 20;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text
+                      x={x}
+                      y={y}
+                      fill="var(--foreground)"
+                      textAnchor={x > cx ? 'start' : 'end'}
+                      dominantBaseline="central"
+                      fontSize={11}
+                      fontWeight={500}
+                    >
+                      {`${value.toFixed(1)}%`}
+                    </text>
+                  );
+                }}
+                labelLine={false}
               >
                 {percentageData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
