@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -92,11 +93,16 @@ export default function LoginPage() {
       <div className="flex min-h-screen">
         {/* Left Panel - Login Form */}
         <div className="flex w-full items-center justify-center p-8 lg:w-1/2">
-          <Card className="w-full max-w-md border-0 bg-white/95 shadow-2xl backdrop-blur-sm">
+          <Card className="w-full max-w-md border-0 bg-white shadow-2xl">
             <CardHeader className="space-y-1 text-center">
               <div className="mb-4 flex items-center justify-center">
-                <span className="text-3xl font-bold text-[#1E40AF]">grow</span>
-                <span className="text-3xl font-bold text-[#06B6D4]">insight</span>
+                <Image
+                  src="/growinsight-logo.png"
+                  alt="GrowInsight"
+                  width={220}
+                  height={50}
+                  className="h-12 w-auto"
+                />
               </div>
               <CardTitle className="text-2xl font-semibold">Welcome back</CardTitle>
               <CardDescription>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   MapPin,
@@ -37,17 +37,19 @@ export const useSidebar = () => useContext(SidebarContext);
 
 function Logo({ isCollapsed }: { isCollapsed: boolean }) {
   return (
-    <Link href="/dashboard" className={cn("flex items-center gap-2 py-6", isCollapsed ? "px-2 justify-center" : "px-4")}>
-      <div className="flex items-center">
-        {isCollapsed ? (
-          <span className="text-2xl font-bold text-[#1E40AF]">g</span>
-        ) : (
-          <>
-            <span className="text-2xl font-bold text-[#1E40AF]">grow</span>
-            <span className="text-2xl font-bold text-[#06B6D4]">insight</span>
-          </>
-        )}
-      </div>
+    <Link href="/dashboard" className={cn("flex items-center py-6", isCollapsed ? "px-2 justify-center" : "px-4")}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/growinsight-square.png"
+        alt="GrowInsight"
+        className={cn("h-8 w-8", isCollapsed ? "block" : "hidden")}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/growinsight-logo.png"
+        alt="GrowInsight"
+        className={cn("h-9 w-auto", isCollapsed ? "hidden" : "block")}
+      />
     </Link>
   );
 }
@@ -83,6 +85,7 @@ function NavItems({ onItemClick, isCollapsed }: { onItemClick?: () => void; isCo
 }
 
 function UserInfo({ isCollapsed }: { isCollapsed: boolean }) {
+  const router = useRouter();
   const { user, logout } = useAuthStore();
 
   const handleLogout = async () => {
@@ -92,6 +95,7 @@ function UserInfo({ isCollapsed }: { isCollapsed: boolean }) {
       console.error('Logout error:', error);
     }
     logout();
+    router.push('/login');
   };
 
   if (isCollapsed) {
