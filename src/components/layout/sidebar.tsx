@@ -11,6 +11,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Map,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -21,6 +22,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Area Level', href: '/area-level', icon: MapPin },
+  { name: 'Channel Map', href: '/channel-map', icon: Map },
   { name: 'Cuisine Level', href: '/cuisine-level', icon: UtensilsCrossed },
 ];
 
