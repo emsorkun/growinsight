@@ -56,7 +56,8 @@ export function PieChartCard({ title, data }: PieChartProps) {
                 nameKey="name"
                 strokeWidth={0}
                 label={({ cx, cy, midAngle, outerRadius, value }) => {
-                  if (value < 5) return null; // Hide labels for very small slices
+                  if (value === undefined || value < 5) return null; // Hide labels for very small slices
+                  if (cx === undefined || cy === undefined || midAngle === undefined || outerRadius === undefined) return null;
                   const RADIAN = Math.PI / 180;
                   const radius = outerRadius + 20;
                   const x = cx + radius * Math.cos(-midAngle * RADIAN);

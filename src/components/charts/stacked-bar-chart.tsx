@@ -76,7 +76,10 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
                   <LabelList
                     dataKey={channel}
                     position="center"
-                    formatter={(value: number) => value >= 5 ? `${value.toFixed(0)}%` : ''}
+                    formatter={(value: unknown) => {
+                      const num = Number(value);
+                      return num >= 5 ? `${num.toFixed(0)}%` : '';
+                    }}
                     style={{ 
                       fill: '#fff', 
                       fontSize: 10,
