@@ -77,7 +77,7 @@ export function BarChartCard({ title, data, yAxisLabel, formatValue }: BarChartP
                 <LabelList 
                   dataKey="value" 
                   position="top" 
-                  formatter={(value: number) => formatValue ? formatValue(value) : value.toFixed(1)}
+                  formatter={(value) => typeof value === 'number' ? (formatValue ? formatValue(value) : value.toFixed(1)) : String(value ?? '')}
                   style={{ 
                     fill: 'var(--foreground)', 
                     fontSize: 11,
