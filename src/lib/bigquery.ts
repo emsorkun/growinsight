@@ -5,10 +5,34 @@ let bigquery: BigQuery | null = null;
 
 function getBigQueryClient(): BigQuery {
   if (!bigquery) {
-    bigquery = new BigQuery({
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    });
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+    
+    // Support both file path (local) and JSON string (Railway/cloud) credentials
+    const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
+    const credentialsFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    
+    if (credentialsJson) {
+      // Parse JSON string credentials (for Railway/cloud deployments)
+      try {
+        const credentials = JSON.parse(credentialsJson);
+        bigquery = new BigQuery({
+          projectId,
+          credentials,
+        });
+      } catch (error) {
+        console.error('Failed to parse GOOGLE_CREDENTIALS_JSON:', error);
+        throw new Error('Invalid GOOGLE_CREDENTIALS_JSON format');
+      }
+    } else if (credentialsFile) {
+      // Use file path (for local development with Docker)
+      bigquery = new BigQuery({
+        projectId,
+        keyFilename: credentialsFile,
+      });
+    } else {
+      // Fall back to default credentials (GCP environment)
+      bigquery = new BigQuery({ projectId });
+    }
   }
   return bigquery;
 }
