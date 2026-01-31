@@ -12,13 +12,15 @@ function getJwtSecret(): string {
 
 const JWT_EXPIRES_IN = '7d';
 
-// Demo credentials - only allowed in development (set DEMO_USERNAME/DEMO_PASSWORD in .env for custom values)
+// Demo credentials - allowed in development, or in production when ENABLE_DEMO_CREDENTIALS=true
+// Set DEMO_USERNAME/DEMO_PASSWORD in .env for custom values
 const DEMO_USERNAME = process.env.DEMO_USERNAME || 'test';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'password';
+const DEMO_ALLOWED_IN_PRODUCTION = process.env.ENABLE_DEMO_CREDENTIALS === 'true';
 
 export async function validateCredentials(username: string, password: string): Promise<User | null> {
-  // Demo credentials for development/demo only
-  if (process.env.NODE_ENV !== 'production' && username === DEMO_USERNAME && password === DEMO_PASSWORD) {
+  const demoAllowed = process.env.NODE_ENV !== 'production' || DEMO_ALLOWED_IN_PRODUCTION;
+  if (demoAllowed && username === DEMO_USERNAME && password === DEMO_PASSWORD) {
     return {
       id: '1',
       username: DEMO_USERNAME,

@@ -48,6 +48,8 @@ The application will be available at `http://localhost:3000`.
 - **Username**: `test`
 - **Password**: `password`
 
+In production, set `ENABLE_DEMO_CREDENTIALS=true` to allow test login.
+
 ## Available Scripts
 
 ```bash
@@ -139,7 +141,9 @@ GOOGLE_APPLICATION_CREDENTIALS=./your-credentials.json
 
 # Auth - JWT_SECRET is required in production
 JWT_SECRET=your-jwt-secret
-# Optional: custom demo credentials (development only)
+# Enable test credentials (test/password) in production - set to "true" for demo/staging
+ENABLE_DEMO_CREDENTIALS=true
+# Optional: custom demo credentials (when ENABLE_DEMO_CREDENTIALS is true)
 DEMO_USERNAME=test
 DEMO_PASSWORD=password
 

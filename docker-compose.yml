@@ -9,6 +9,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - ENABLE_DEMO_CREDENTIALS=${ENABLE_DEMO_CREDENTIALS:-false}
       - GOOGLE_CLOUD_PROJECT_ID=vpc-host-prod-fn204-ex958
       - GOOGLE_APPLICATION_CREDENTIALS=/app/vpc-host-prod-fn204-ex958-654b99d94b5d.json
       - JWT_SECRET=${JWT_SECRET:-growinsight-secret-key-change-in-production}
