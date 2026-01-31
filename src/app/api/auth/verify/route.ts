@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = verifyToken(token);
-    
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: { user },
+      data: { user, token },
     });
   } catch (error) {
     console.error('Verify error:', error);
