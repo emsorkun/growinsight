@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCredentials, generateToken } from '@/lib/auth';
 import { z } from 'zod';
+import { apiError, zodErrorResponse } from '@/lib/api-utils';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -39,17 +40,8 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.issues;
-      return NextResponse.json(
-        { success: false, error: issues[0]?.message || 'Validation error' },
-        { status: 400 }
-      );
+      return zodErrorResponse(error);
     }
-
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiError(error, 'Internal server error');
   }
 }

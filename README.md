@@ -132,9 +132,17 @@ docker-compose up -d
 Create a `.env.local` file with:
 
 ```env
+# BigQuery (use BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID)
 GOOGLE_CLOUD_PROJECT_ID=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=./your-credentials.json
+# Or for cloud deployments: GOOGLE_CREDENTIALS_JSON={"type":"service_account",...}
+
+# Auth - JWT_SECRET is required in production
 JWT_SECRET=your-jwt-secret
+# Optional: custom demo credentials (development only)
+DEMO_USERNAME=test
+DEMO_PASSWORD=password
+
 NEXT_PUBLIC_APP_NAME=GrowInsight
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```

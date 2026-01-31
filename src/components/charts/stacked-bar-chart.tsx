@@ -44,7 +44,7 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
         <CardTitle className="text-base font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[320px]">
+        <div className="h-[320px]" role="img" aria-label={`Stacked bar chart: ${title}`}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />

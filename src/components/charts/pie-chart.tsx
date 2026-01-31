@@ -1,6 +1,6 @@
 'use client';
 
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LabelList } from 'recharts';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface PieChartData {
@@ -42,7 +42,7 @@ export function PieChartCard({ title, data }: PieChartProps) {
         <CardTitle className="text-base font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className="h-[280px]" role="img" aria-label={`Pie chart: ${title}`}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsPieChart>
               <Pie

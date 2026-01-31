@@ -85,9 +85,11 @@ export function FilterBar({ showSignalStrength = false, hideMonth = false }: Fil
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4">
       {!hideMonth && (
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Month</label>
+          <label htmlFor="filter-month" className="text-xs font-medium text-muted-foreground">
+            Month
+          </label>
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger id="filter-month" className="w-[160px]">
               <SelectValue placeholder="All Months" />
             </SelectTrigger>
             <SelectContent>
@@ -103,9 +105,11 @@ export function FilterBar({ showSignalStrength = false, hideMonth = false }: Fil
       )}
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">City</label>
+        <label htmlFor="filter-city" className="text-xs font-medium text-muted-foreground">
+          City
+        </label>
         <Select value={selectedCity} onValueChange={setSelectedCity}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger id="filter-city" className="w-[160px]">
             <SelectValue placeholder="All Cities" />
           </SelectTrigger>
           <SelectContent>
@@ -120,9 +124,11 @@ export function FilterBar({ showSignalStrength = false, hideMonth = false }: Fil
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Area</label>
+        <label htmlFor="filter-area" className="text-xs font-medium text-muted-foreground">
+          Area
+        </label>
         <Select value={selectedArea} onValueChange={setSelectedArea}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger id="filter-area" className="w-[180px]">
             <SelectValue placeholder="All Areas" />
           </SelectTrigger>
           <SelectContent>
@@ -137,9 +143,11 @@ export function FilterBar({ showSignalStrength = false, hideMonth = false }: Fil
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Cuisine</label>
+        <label htmlFor="filter-cuisine" className="text-xs font-medium text-muted-foreground">
+          Cuisine
+        </label>
         <Select value={selectedCuisine} onValueChange={setSelectedCuisine}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger id="filter-cuisine" className="w-[180px]">
             <SelectValue placeholder="All Cuisines" />
           </SelectTrigger>
           <SelectContent>
@@ -155,10 +163,12 @@ export function FilterBar({ showSignalStrength = false, hideMonth = false }: Fil
 
       {showSignalStrength && (
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Signal Strength</label>
+          <label htmlFor="filter-signal-strength" className="text-xs font-medium text-muted-foreground">
+            Signal Strength
+          </label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[160px] justify-between font-normal">
+              <Button id="filter-signal-strength" variant="outline" className="w-[160px] justify-between font-normal">
                 <span className="truncate">{getSignalStrengthLabel()}</span>
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>

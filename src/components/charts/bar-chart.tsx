@@ -47,7 +47,7 @@ export function BarChartCard({ title, data, yAxisLabel, formatValue }: BarChartP
         <CardTitle className="text-base font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className="h-[280px]" role="img" aria-label={`Bar chart: ${title}`}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />

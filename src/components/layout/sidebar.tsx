@@ -44,13 +44,11 @@ export const useSidebar = () => useContext(SidebarContext);
 function Logo({ isCollapsed }: { isCollapsed: boolean }) {
   return (
     <Link href="/dashboard" className={cn("flex items-center py-6", isCollapsed ? "px-2 justify-center" : "px-4")}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/growinsight-square.png"
         alt="GrowInsight"
         className={cn("h-8 w-8", isCollapsed ? "block" : "hidden")}
       />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/growinsight-logo.png"
         alt="GrowInsight"
@@ -154,10 +152,12 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('sidebar-collapsed');
-    if (stored !== null) {
-      setIsCollapsed(stored === 'true');
-    }
+    void Promise.resolve().then(() => {
+      const stored = localStorage.getItem('sidebar-collapsed');
+      if (stored !== null) {
+        setIsCollapsed(stored === 'true');
+      }
+    });
   }, []);
 
   const toggleCollapsed = () => {

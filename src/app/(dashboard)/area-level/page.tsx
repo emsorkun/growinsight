@@ -113,12 +113,12 @@ function CuisineDetailDialog({ area, open, onClose }: CuisineDetailDialogProps) 
 
   useEffect(() => {
     if (open && area) {
-      setIsLoading(true);
       const params = new URLSearchParams();
       params.set('area', area);
       if (selectedMonth !== 'all') params.set('month', selectedMonth);
       if (selectedCity !== 'all') params.set('city', selectedCity);
 
+      void Promise.resolve().then(() => setIsLoading(true));
       fetch(`/api/areas/cuisines?${params.toString()}`)
         .then((res) => res.json())
         .then((result) => {
@@ -252,12 +252,12 @@ function TrendDialog({ area, open, onClose }: TrendDialogProps) {
 
   useEffect(() => {
     if (open && area) {
-      setIsLoading(true);
       const params = new URLSearchParams();
       params.set('area', area);
       if (selectedCity !== 'all') params.set('city', selectedCity);
       if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
 
+      void Promise.resolve().then(() => setIsLoading(true));
       fetch(`/api/areas/trends?${params.toString()}`)
         .then((res) => res.json())
         .then((result) => {
@@ -361,12 +361,12 @@ function WeeklyTrendDialog({ area, open, onClose }: WeeklyTrendDialogProps) {
 
   useEffect(() => {
     if (open && area) {
-      setIsLoading(true);
-      // For now, use mock data
-      setTimeout(() => {
+      void Promise.resolve().then(() => setIsLoading(true));
+      const timer = setTimeout(() => {
         setData(getMockWeeklyTrendData());
         setIsLoading(false);
       }, 500);
+      return () => clearTimeout(timer);
     }
   }, [open, area, selectedCity, selectedCuisine]);
 
@@ -559,13 +559,12 @@ function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
 
   useEffect(() => {
     if (open && area) {
-      setIsLoading(true);
-      // For now, use mock data since we don't have an API endpoint yet
-      // In production, this would fetch from /api/areas/ads-discount
-      setTimeout(() => {
+      void Promise.resolve().then(() => setIsLoading(true));
+      const timer = setTimeout(() => {
         setData(getMockAdsDiscountData());
         setIsLoading(false);
       }, 500);
+      return () => clearTimeout(timer);
     }
   }, [open, area, selectedMonth, selectedCity]);
 

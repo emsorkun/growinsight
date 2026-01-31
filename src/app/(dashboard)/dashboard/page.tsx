@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/header';
 import { FilterBar } from '@/components/layout/filter-bar';
 import { useFilterStore } from '@/store/filter-store';
-import { CHANNEL_COLORS, type AggregatedData, type MonthlyMarketShare, type Channel } from '@/types';
+import { type AggregatedData, type Channel, type MonthlyMarketShare } from '@/types';
 import { formatCurrency, formatPercentage } from '@/lib/data-utils';
-import { Loader2 } from 'lucide-react';
+import { getDashboardChartData } from '@/lib/chart-utils';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 const PieChartCard = dynamic(() => import('@/components/charts/pie-chart').then((m) => ({ default: m.PieChartCard })), {
@@ -52,45 +53,57 @@ interface DashboardData {
   };
 }
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchDashboardData(filters: {
+  month: string;
+  city: string;
+  area: string;
+  cuisine: string;
+}): Promise<DashboardData> {
+  const params = new URLSearchParams();
+  if (filters.month !== 'all') params.set('month', filters.month);
+  if (filters.city !== 'all') params.set('city', filters.city);
+  if (filters.area !== 'all') params.set('area', filters.area);
+  if (filters.cuisine !== 'all') params.set('cuisine', filters.cuisine);
 
+  const response = await fetch(`/api/dashboard?${params.toString()}`);
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to fetch data');
+  }
+  return result.data;
+}
+
+export default function DashboardPage() {
   const { selectedMonth, selectedCity, selectedArea, selectedCuisine, setOptions } = useFilterStore();
 
-  const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['dashboard', selectedMonth, selectedCity, selectedArea, selectedCuisine],
+    queryFn: () =>
+      fetchDashboardData({
+        month: selectedMonth,
+        city: selectedCity,
+        area: selectedArea,
+        cuisine: selectedCuisine,
+      }),
+    retry: 1,
+  });
 
-    try {
-      const params = new URLSearchParams();
-      if (selectedMonth !== 'all') params.set('month', selectedMonth);
-      if (selectedCity !== 'all') params.set('city', selectedCity);
-      if (selectedArea !== 'all') params.set('area', selectedArea);
-      if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
-
-      const response = await fetch(`/api/dashboard?${params.toString()}`);
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch data');
-      }
-
-      setData(result.data);
-      setOptions(result.data.filterOptions);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      // Set mock data for demo purposes if BigQuery fails
-      setData(getMockData());
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedMonth, selectedCity, selectedArea, selectedCuisine, setOptions]);
+  const demoData = useMemo(() => (isError ? getMockData() : null), [isError]);
+  const displayData = data ?? demoData;
+  const isDemoMode = isError && !!displayData;
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (displayData?.filterOptions) {
+      setOptions(displayData.filterOptions);
+    }
+  }, [displayData?.filterOptions, setOptions]);
 
   if (isLoading) {
     return (
@@ -124,12 +137,12 @@ export default function DashboardPage() {
     );
   }
 
-  if (error && !data) {
+  if (isError && !displayData) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <p className="text-destructive">{error}</p>
-          <button onClick={fetchDashboardData} className="mt-4 text-primary underline">
+          <p className="text-destructive">{error instanceof Error ? error.message : 'An error occurred'}</p>
+          <button onClick={() => refetch()} className="mt-4 text-primary underline">
             Try again
           </button>
         </div>
@@ -137,51 +150,9 @@ export default function DashboardPage() {
     );
   }
 
-  const channelData = data?.channelData || [];
-  const monthlyData = data?.monthlyData || [];
-
-  // Prepare chart data
-  const ordersChartData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.orders,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
-
-  const netSalesChartData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.netSales,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
-
-  const adsSpendVsGrossData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.grossSales > 0 ? (d.adsSpend / d.grossSales) * 100 : 0,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
-
-  const discountSpendVsGrossData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.grossSales > 0 ? (d.discountSpend / d.grossSales) * 100 : 0,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
-
-  const totalMarketingVsGrossData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.grossSales > 0 ? ((d.adsSpend + d.discountSpend) / d.grossSales) * 100 : 0,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
-
-  const roasData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.roas,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
-
-  const aovData = channelData.map((d) => ({
-    name: d.channel,
-    value: d.aov,
-    color: CHANNEL_COLORS[d.channel as Channel],
-  }));
+  const channelData = displayData?.channelData ?? [];
+  const monthlyData = displayData?.monthlyData ?? [];
+  const chartData = getDashboardChartData(channelData);
 
   return (
     <div className="flex flex-col">
@@ -190,16 +161,23 @@ export default function DashboardPage() {
       <div className="flex-1 space-y-6 p-4 lg:p-6">
         <FilterBar />
 
-        {error && (
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-            Note: Using demo data. {error}
+        {isDemoMode && (
+          <div
+            className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900 dark:border-amber-600 dark:bg-amber-950/50 dark:text-amber-100"
+            role="alert"
+          >
+            <strong>Demo mode</strong> – Real data is unavailable. You are viewing sample data. Error:{' '}
+            {error instanceof Error ? error.message : 'Unknown error'}{' '}
+            <button onClick={() => refetch()} className="ml-2 underline">
+              Try again
+            </button>
           </div>
         )}
 
         {/* Row 1: Pie Charts */}
         <div className="grid gap-6 md:grid-cols-2">
-          <PieChartCard title="Orders by Channel" data={ordersChartData} />
-          <PieChartCard title="Net Sales by Channel" data={netSalesChartData} />
+          <PieChartCard title="Orders by Channel" data={chartData.orders} />
+          <PieChartCard title="Net Sales by Channel" data={chartData.netSales} />
         </div>
 
         {/* Row 2: Stacked Bar Chart */}
@@ -212,19 +190,19 @@ export default function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-3">
           <BarChartCard
             title="Ads Spend vs Gross Sales"
-            data={adsSpendVsGrossData}
+            data={chartData.adsSpendVsGross}
             yAxisLabel="%"
             formatValue={(v) => formatPercentage(v)}
           />
           <BarChartCard
             title="Discount Spend vs Gross Sales"
-            data={discountSpendVsGrossData}
+            data={chartData.discountSpendVsGross}
             yAxisLabel="%"
             formatValue={(v) => formatPercentage(v)}
           />
           <BarChartCard
             title="Total Marketing vs Gross Sales"
-            data={totalMarketingVsGrossData}
+            data={chartData.totalMarketingVsGross}
             yAxisLabel="%"
             formatValue={(v) => formatPercentage(v)}
           />
@@ -234,12 +212,12 @@ export default function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-2">
           <BarChartCard
             title="ROAS by Channel"
-            data={roasData}
+            data={chartData.roas}
             formatValue={(v) => v.toFixed(2)}
           />
           <BarChartCard
             title="Average Order Value by Channel"
-            data={aovData}
+            data={chartData.aov}
             formatValue={(v) => formatCurrency(v)}
           />
         </div>

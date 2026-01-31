@@ -7,7 +7,6 @@ import { FilterBar } from '@/components/layout/filter-bar';
 import { useFilterStore } from '@/store/filter-store';
 import { CHANNEL_COLORS, type AggregatedData, type WeeklyMarketShare, type Channel } from '@/types';
 import { formatCurrency, formatPercentage } from '@/lib/data-utils';
-import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 const PieChartCard = dynamic(() => import('@/components/charts/pie-chart').then((m) => ({ default: m.PieChartCard })), {

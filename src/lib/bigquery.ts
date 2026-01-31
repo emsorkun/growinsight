@@ -3,13 +3,18 @@ import type { SalesData, WeeklySalesData } from '@/types';
 
 let bigquery: BigQuery | null = null;
 
+/** Project ID - use BIGQUERY_PROJECT_ID or fall back to GOOGLE_CLOUD_PROJECT_ID */
+function getProjectId(): string {
+  return process.env.BIGQUERY_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT_ID || '';
+}
+
 function getBigQueryClient(): BigQuery {
   if (!bigquery) {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+    const projectId = getProjectId();
     
     if (!projectId) {
-      console.error('Missing GOOGLE_CLOUD_PROJECT_ID environment variable');
-      throw new Error('BigQuery configuration error: Missing project ID. Please set GOOGLE_CLOUD_PROJECT_ID environment variable.');
+      console.error('Missing BigQuery project ID. Set BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID.');
+      throw new Error('BigQuery configuration error: Missing project ID. Please set BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID.');
     }
     
     // Support both file path (local) and JSON string (Railway/cloud) credentials
@@ -101,24 +106,27 @@ export async function fetchSalesData(filters?: {
       ? parseYYYYMMForFilter(filters.month).year
       : '';
   const yearValue = yearForFilter || '2025';
-  let whereClause = `WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '${yearValue.replace(/'/g, "''")}'`;
+  const hasMonthFilter = filters?.month && filters.month !== 'all';
+  const { monthParts } = hasMonthFilter ? parseYYYYMMForFilter(filters.month!) : { monthParts: [] };
 
-  if (filters?.month && filters.month !== 'all') {
-    const { monthParts } = parseYYYYMMForFilter(filters.month);
-    if (monthParts.length) {
-      const quoted = monthParts.map((p) => `'${String(p).replace(/'/g, "''")}'`).join(', ');
-      whereClause += ` AND SPLIT(s.month_year, "-")[OFFSET(0)] IN (${quoted})`;
-    }
+  const conditions: string[] = ['br.country_id = 1', "SPLIT(s.month_year, '-')[OFFSET(1)] = @yearValue"];
+  const params: Record<string, string | string[]> = { yearValue };
+
+  if (hasMonthFilter && monthParts.length > 0) {
+    conditions.push("SPLIT(s.month_year, '-')[OFFSET(0)] IN UNNEST(@monthParts)");
+    params.monthParts = monthParts;
   }
-
   if (filters?.city && filters.city !== 'all') {
-    whereClause += ` AND gl.clean_city = '${filters.city}'`;
+    conditions.push('gl.clean_city = @city');
+    params.city = filters.city;
   }
   if (filters?.area && filters.area !== 'all') {
-    whereClause += ` AND gl.clean_area = '${filters.area}'`;
+    conditions.push('gl.clean_area = @area');
+    params.area = filters.area;
   }
   if (filters?.cuisine && filters.cuisine !== 'all') {
-    whereClause += ` AND cu.name = '${filters.cuisine}'`;
+    conditions.push('cu.name = @cuisine');
+    params.cuisine = filters.cuisine;
   }
 
   const query = `
@@ -151,12 +159,12 @@ export async function fetchSalesData(filters?: {
       ON CAST(br.cuisine_id AS INT64) = cu.id
     LEFT JOIN \`vpc-host-prod-fn204-ex958.growinsight.l3_growinsight_locations\` AS gl
       ON b.location_id = gl.location_id
-    ${whereClause}
+    WHERE ${conditions.join(' AND ')}
     ORDER BY year, month, channel, city
   `;
 
   try {
-    const [rows] = await client.query({ query });
+    const [rows] = await client.query({ query, params });
     const list = (rows as { month: string; year: string; [k: string]: unknown }[]).map((row) => ({
       ...row,
       month: toYYYYMM(String(row.year), String(row.month)),
@@ -176,18 +184,22 @@ export async function fetchWeeklySalesData(filters?: {
 }): Promise<WeeklySalesData[]> {
   const client = getBigQueryClient();
 
-  let whereClause = `
-    WHERE br.country_id = 1
-    AND PARSE_DATE('%d-%m-%Y', s.week_start_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 WEEK)
-  `;
+  const conditions: string[] = [
+    'br.country_id = 1',
+    "PARSE_DATE('%d-%m-%Y', s.week_start_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 WEEK)",
+  ];
+  const params: Record<string, string> = {};
   if (filters?.city && filters.city !== 'all') {
-    whereClause += ` AND l.clean_city = '${filters.city}'`;
+    conditions.push('l.clean_city = @city');
+    params.city = filters.city;
   }
   if (filters?.area && filters.area !== 'all') {
-    whereClause += ` AND l.clean_area = '${filters.area}'`;
+    conditions.push('l.clean_area = @area');
+    params.area = filters.area;
   }
   if (filters?.cuisine && filters.cuisine !== 'all') {
-    whereClause += ` AND cu.name = '${filters.cuisine}'`;
+    conditions.push('cu.name = @cuisine');
+    params.cuisine = filters.cuisine;
   }
 
   const query = `
@@ -220,12 +232,12 @@ export async function fetchWeeklySalesData(filters?: {
       ON CAST(br.cuisine_id AS INT64) = cu.id
     LEFT JOIN \`vpc-host-prod-fn204-ex958.growinsight.l3_growinsight_locations\` AS l
       ON CAST(b.location_id AS INT64) = l.location_id
-    ${whereClause}
+    WHERE ${conditions.join(' AND ')}
     ORDER BY year, week, channel, city
   `;
 
   try {
-    const [rows] = await client.query({ query });
+    const [rows] = await client.query({ query, params: Object.keys(params).length > 0 ? params : undefined });
     return rows as WeeklySalesData[];
   } catch (error) {
     console.error('BigQuery error (weekly):', error);
@@ -359,7 +371,7 @@ export async function fetchMissingBrands(): Promise<{
       name: row.name || 'Unknown',
       cuisine: row.cuisine || 'Unknown',
       location: row.location || 'Unknown',
-      rating: Math.floor(Math.random() * 2) + 3 + Math.random(),
+      rating: 0, // Placeholder until rating data is available from a source
       locationCount: Number(row.locationCount) || 1,
     }));
   } catch (error) {
