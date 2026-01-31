@@ -1,4 +1,4 @@
-import type { SalesData, AggregatedData, MonthlyMarketShare, MarketShareByArea, MarketShareByCuisine, MarketShareByAreaExtended, CuisineDetailByArea, AreaMonthlyTrend, Channel } from '@/types';
+import type { SalesData, AggregatedData, MonthlyMarketShare, WeeklySalesData, WeeklyMarketShare, MarketShareByArea, MarketShareByCuisine, MarketShareByAreaExtended, CuisineDetailByArea, AreaMonthlyTrend, Channel } from '@/types';
 
 const CHANNELS: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
 
@@ -40,6 +40,72 @@ export function aggregateByChannel(data: SalesData[]): AggregatedData[] {
   }).filter((d) => d.orders > 0);
 }
 
+export function aggregateWeeklyByChannel(data: WeeklySalesData[]): AggregatedData[] {
+  const channelMap = new Map<Channel, AggregatedData>();
+
+  CHANNELS.forEach((channel) => {
+    channelMap.set(channel, {
+      channel,
+      orders: 0,
+      netSales: 0,
+      grossSales: 0,
+      adsSpend: 0,
+      discountSpend: 0,
+      adsReturn: 0,
+      roas: 0,
+      aov: 0,
+    });
+  });
+
+  data.forEach((row) => {
+    const channel = normalizeChannel(row.channel);
+    if (!channel) return;
+
+    const existing = channelMap.get(channel)!;
+    existing.orders += row.orders || 0;
+    existing.netSales += row.netSales || 0;
+    existing.grossSales += row.grossSales || 0;
+    existing.adsSpend += row.adsSpend || 0;
+    existing.discountSpend += row.discountSpend || 0;
+    existing.adsReturn += row.adsReturn || 0;
+  });
+
+  return CHANNELS.map((channel) => {
+    const agg = channelMap.get(channel)!;
+    agg.roas = agg.adsSpend > 0 ? agg.adsReturn / agg.adsSpend : 0;
+    agg.aov = agg.orders > 0 ? agg.grossSales / agg.orders : 0;
+    return agg;
+  }).filter((d) => d.orders > 0);
+}
+
+export function calculateWeeklyMarketShare(data: WeeklySalesData[]): WeeklyMarketShare[] {
+  const weeklyMap = new Map<string, { weekStartDate: string; channelOrders: Map<Channel, number> }>();
+
+  data.forEach((row) => {
+    const key = `${row.year}-W${String(row.week).padStart(2, '0')}`;
+    const channel = normalizeChannel(row.channel);
+    if (!channel) return;
+
+    if (!weeklyMap.has(key)) {
+      weeklyMap.set(key, { weekStartDate: row.weekStartDate, channelOrders: new Map() });
+    }
+    const weekData = weeklyMap.get(key)!;
+    weekData.channelOrders.set(channel, (weekData.channelOrders.get(channel) || 0) + (row.orders || 0));
+  });
+
+  return Array.from(weeklyMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([weekLabel, { weekStartDate, channelOrders }]) => {
+      const total = Array.from(channelOrders.values()).reduce((sum, val) => sum + val, 0);
+      const marketShare: Record<Channel, number> = {} as Record<Channel, number>;
+      CHANNELS.forEach((channel) => {
+        const value = channelOrders.get(channel) || 0;
+        marketShare[channel] = total > 0 ? (value / total) * 100 : 0;
+      });
+      return { weekLabel, weekStartDate, marketShare };
+    });
+}
+
 export function calculateMonthlyMarketShare(data: SalesData[]): MonthlyMarketShare[] {
   const monthlyMap = new Map<string, Map<Channel, number>>();
 
@@ -56,10 +122,8 @@ export function calculateMonthlyMarketShare(data: SalesData[]): MonthlyMarketSha
     channelMap.set(channel, (channelMap.get(channel) || 0) + (row.orders || 0));
   });
 
-  const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
   return Array.from(monthlyMap.entries())
-    .sort((a, b) => monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]))
+    .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, channelMap]) => {
       const total = Array.from(channelMap.values()).reduce((sum, val) => sum + val, 0);
       const marketShare: Record<Channel, number> = {} as Record<Channel, number>;
@@ -302,10 +366,8 @@ export function calculateAreaMonthlyTrend(data: SalesData[], targetArea: string)
     channelMap.set(channel, (channelMap.get(channel) || 0) + (row.orders || 0));
   });
 
-  const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
   return Array.from(monthlyMap.entries())
-    .sort((a, b) => monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]))
+    .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, channelMap]) => {
       const total = Array.from(channelMap.values()).reduce((sum, val) => sum + val, 0);
       const marketShare: Record<Channel, number> = {} as Record<Channel, number>;

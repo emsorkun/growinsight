@@ -16,7 +16,7 @@ const mockSalesData: SalesData[] = [
     city: 'Dubai',
     area: 'Marina',
     monthYear: 'January-2025',
-    month: 'January',
+    month: '2025-01',
     year: '2025',
     location: 'Marina Mall',
     cuisine: 'Italian',
@@ -32,7 +32,7 @@ const mockSalesData: SalesData[] = [
     city: 'Dubai',
     area: 'Marina',
     monthYear: 'January-2025',
-    month: 'January',
+    month: '2025-01',
     year: '2025',
     location: 'Marina Walk',
     cuisine: 'Italian',
@@ -48,7 +48,7 @@ const mockSalesData: SalesData[] = [
     city: 'Dubai',
     area: 'JBR',
     monthYear: 'February-2025',
-    month: 'February',
+    month: '2025-02',
     year: '2025',
     location: 'JBR Beach',
     cuisine: 'American',
@@ -107,7 +107,7 @@ describe('Data Utils', () => {
 
       expect(result.length).toBe(2); // January and February
 
-      const january = result.find((d) => d.month === 'January');
+      const january = result.find((d) => d.month === '2025-01');
       expect(january).toBeDefined();
 
       // January: Talabat 100 orders, Deliveroo 80 orders

@@ -20,8 +20,8 @@ describe('Filter Store', () => {
 
   describe('setSelectedMonth', () => {
     it('should update selected month', () => {
-      useFilterStore.getState().setSelectedMonth('January');
-      expect(useFilterStore.getState().selectedMonth).toBe('January');
+      useFilterStore.getState().setSelectedMonth('2025-01');
+      expect(useFilterStore.getState().selectedMonth).toBe('2025-01');
     });
   });
 
@@ -57,7 +57,7 @@ describe('Filter Store', () => {
   describe('setOptions', () => {
     it('should update filter options', () => {
       const options = {
-        months: ['January', 'February'],
+        months: ['2025-01', '2025-02'],
         cities: ['Dubai', 'Abu Dhabi'],
         areas: ['Marina', 'JBR'],
         cuisines: ['Italian', 'American'],
@@ -66,7 +66,7 @@ describe('Filter Store', () => {
       useFilterStore.getState().setOptions(options);
 
       const state = useFilterStore.getState();
-      expect(state.options.months).toEqual(['January', 'February']);
+      expect(state.options.months).toEqual(['2025-01', '2025-02']);
       expect(state.options.cities).toEqual(['Dubai', 'Abu Dhabi']);
     });
   });
@@ -74,7 +74,7 @@ describe('Filter Store', () => {
   describe('resetFilters', () => {
     it('should reset all filters to default', () => {
       // Set some filters
-      useFilterStore.getState().setSelectedMonth('January');
+      useFilterStore.getState().setSelectedMonth('2025-01');
       useFilterStore.getState().setSelectedCity('Dubai');
       useFilterStore.getState().setSelectedArea('Marina');
       useFilterStore.getState().setSelectedCuisine('Italian');

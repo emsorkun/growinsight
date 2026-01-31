@@ -258,7 +258,7 @@ export default function ChannelMapPage() {
 
 function getMockFilterOptions(): { months: string[]; cities: string[]; areas: string[]; cuisines: string[] } {
   return {
-    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'],
+    months: ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10'],
     cities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman'],
     areas: ['Downtown Dubai', 'Dubai Marina', 'JBR', 'Business Bay', 'DIFC', 'Al Barsha', 'Jumeirah', 'Deira', 'Palm Jumeirah', 'Silicon Oasis'],
     cuisines: ['Arabian', 'Indian', 'Pakistani', 'Chinese', 'American', 'Italian', 'Japanese'],

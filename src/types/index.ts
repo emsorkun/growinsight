@@ -74,6 +74,30 @@ export interface MonthlyMarketShare {
   marketShare: Record<Channel, number>;
 }
 
+// Weekly data (last 12 weeks)
+export interface WeeklySalesData {
+  channel: string;
+  city: string;
+  area: string;
+  weekStartDate: string;
+  week: number;
+  year: number;
+  location: string;
+  cuisine: string;
+  orders: number;
+  netSales: number;
+  grossSales: number;
+  adsSpend: number;
+  discountSpend: number;
+  adsReturn: number;
+}
+
+export interface WeeklyMarketShare {
+  weekLabel: string;
+  weekStartDate: string;
+  marketShare: Record<Channel, number>;
+}
+
 export interface MissingBrand {
   id: string;
   name: string;

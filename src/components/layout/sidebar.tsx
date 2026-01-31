@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Map,
+  CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -21,6 +22,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Weekly Figures', href: '/dashboard/weekly', icon: CalendarDays },
   { name: 'Area Level', href: '/area-level', icon: MapPin },
   { name: 'Channel Map', href: '/channel-map', icon: Map },
   { name: 'Cuisine Level', href: '/cuisine-level', icon: UtensilsCrossed },
@@ -30,9 +32,11 @@ const navigation = [
 const SidebarContext = createContext<{
   isCollapsed: boolean;
   setIsCollapsed: (value: boolean) => void;
+  toggleCollapsed: () => void;
 }>({
   isCollapsed: false,
   setIsCollapsed: () => {},
+  toggleCollapsed: () => {},
 });
 
 export const useSidebar = () => useContext(SidebarContext);
@@ -146,10 +150,9 @@ function UserInfo({ isCollapsed }: { isCollapsed: boolean }) {
   );
 }
 
-export function Sidebar() {
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Load collapsed state from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed');
     if (stored !== null) {
@@ -157,12 +160,43 @@ export function Sidebar() {
     }
   }, []);
 
-  // Save collapsed state to localStorage
   const toggleCollapsed = () => {
     const newValue = !isCollapsed;
     setIsCollapsed(newValue);
     localStorage.setItem('sidebar-collapsed', String(newValue));
   };
+
+  return (
+    <SidebarContext.Provider
+      value={{ isCollapsed, setIsCollapsed, toggleCollapsed }}
+    >
+      {children}
+    </SidebarContext.Provider>
+  );
+}
+
+/** Standard shadcn placement: trigger in header (main), not inside sidebar */
+export function SidebarTrigger() {
+  const { isCollapsed, toggleCollapsed } = useSidebar();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleCollapsed}
+      className="hidden lg:flex h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+      aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+    >
+      {isCollapsed ? (
+        <ChevronRight className="h-4 w-4" />
+      ) : (
+        <ChevronLeft className="h-4 w-4" />
+      )}
+    </Button>
+  );
+}
+
+export function Sidebar() {
+  const { isCollapsed } = useSidebar();
 
   return (
     <aside
@@ -174,28 +208,6 @@ export function Sidebar() {
       <Logo isCollapsed={isCollapsed} />
       <NavItems isCollapsed={isCollapsed} />
       <UserInfo isCollapsed={isCollapsed} />
-      
-      {/* Collapse Toggle Button */}
-      <div className="border-t border-sidebar-border p-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleCollapsed}
-          className={cn(
-            'w-full text-muted-foreground hover:text-foreground',
-            isCollapsed ? 'px-2' : 'px-3'
-          )}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              <span>Collapse</span>
-            </>
-          )}
-        </Button>
-      </div>
     </aside>
   );
 }

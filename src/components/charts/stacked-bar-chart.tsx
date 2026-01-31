@@ -34,7 +34,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 
 export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
   const chartData = data.map((item) => ({
-    month: item.month.substring(0, 3),
+    month: item.month,
     ...item.marketShare,
   }));
 
@@ -59,7 +59,7 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={{ stroke: 'var(--border)' }}
                 domain={[0, 100]}
-                tickFormatter={(value) => `${value}%`}
+                tickFormatter={(value) => `${Math.round(Number(value))}%`}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend 

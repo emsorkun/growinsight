@@ -275,7 +275,7 @@ function TrendDialog({ area, open, onClose }: TrendDialogProps) {
   }, [open, area, selectedCity, selectedCuisine]);
 
   const chartData = data.map((item) => ({
-    month: item.month.substring(0, 3),
+    month: item.month,
     ...item.marketShare,
   }));
 
@@ -1203,16 +1203,16 @@ function getMockCuisineData(): CuisineDetailByArea[] {
 
 function getMockTrendData(): AreaMonthlyTrend[] {
   const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
+    '2025-01',
+    '2025-02',
+    '2025-03',
+    '2025-04',
+    '2025-05',
+    '2025-06',
+    '2025-07',
+    '2025-08',
+    '2025-09',
+    '2025-10',
   ];
 
   return months.map((month) => {

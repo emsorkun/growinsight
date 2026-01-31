@@ -1,5 +1,5 @@
 import { BigQuery } from '@google-cloud/bigquery';
-import type { SalesData } from '@/types';
+import type { SalesData, WeeklySalesData } from '@/types';
 
 let bigquery: BigQuery | null = null;
 
@@ -61,6 +61,33 @@ function getBigQueryClient(): BigQuery {
   return bigquery;
 }
 
+/** month_year in DB is "January-2025"; we use "YYYY-MM" in filters and charts. */
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function toYYYYMM(year: string, monthPart: string): string {
+  const n = parseInt(monthPart, 10);
+  if (!Number.isNaN(n) && n >= 1 && n <= 12) {
+    return `${year}-${String(n).padStart(2, '0')}`;
+  }
+  const idx = MONTH_NAMES.indexOf(monthPart);
+  if (idx >= 0) return `${year}-${String(idx + 1).padStart(2, '0')}`;
+  return `${year}-${monthPart}`;
+}
+
+/** Return [year, monthPartValues] for a YYYY-MM string so WHERE works for "01-2025", "1-2025", or "January-2025". */
+function parseYYYYMMForFilter(yyyyMm: string): { year: string; monthParts: string[] } {
+  const [y, m] = yyyyMm.split('-');
+  const num = parseInt(m, 10);
+  if (Number.isNaN(num) || num < 1 || num > 12) {
+    return { year: y || '', monthParts: [m].filter(Boolean) };
+  }
+  const padded = String(num).padStart(2, '0');
+  return {
+    year: y || '',
+    monthParts: [padded, String(num), MONTH_NAMES[num - 1]],
+  };
+}
+
 export async function fetchSalesData(filters?: {
   month?: string;
   city?: string;
@@ -69,11 +96,21 @@ export async function fetchSalesData(filters?: {
 }): Promise<SalesData[]> {
   const client = getBigQueryClient();
 
-  let whereClause = `WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '2025'`;
+  const yearForFilter =
+    filters?.month && filters.month !== 'all'
+      ? parseYYYYMMForFilter(filters.month).year
+      : '';
+  const yearValue = yearForFilter || '2025';
+  let whereClause = `WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '${yearValue.replace(/'/g, "''")}'`;
 
   if (filters?.month && filters.month !== 'all') {
-    whereClause += ` AND SPLIT(s.month_year, "-")[OFFSET(0)] = '${filters.month}'`;
+    const { monthParts } = parseYYYYMMForFilter(filters.month);
+    if (monthParts.length) {
+      const quoted = monthParts.map((p) => `'${String(p).replace(/'/g, "''")}'`).join(', ');
+      whereClause += ` AND SPLIT(s.month_year, "-")[OFFSET(0)] IN (${quoted})`;
+    }
   }
+
   if (filters?.city && filters.city !== 'all') {
     whereClause += ` AND gl.clean_city = '${filters.city}'`;
   }
@@ -120,9 +157,78 @@ export async function fetchSalesData(filters?: {
 
   try {
     const [rows] = await client.query({ query });
-    return rows as SalesData[];
+    const list = (rows as { month: string; year: string; [k: string]: unknown }[]).map((row) => ({
+      ...row,
+      month: toYYYYMM(String(row.year), String(row.month)),
+    }));
+    return list as SalesData[];
   } catch (error) {
     console.error('BigQuery error:', error);
+    throw error;
+  }
+}
+
+/** Last 12 weeks only. Uses l3_legacy_weekly_sales + l3_legacy_weekly_ad_campaigns. */
+export async function fetchWeeklySalesData(filters?: {
+  city?: string;
+  area?: string;
+  cuisine?: string;
+}): Promise<WeeklySalesData[]> {
+  const client = getBigQueryClient();
+
+  let whereClause = `
+    WHERE br.country_id = 1
+    AND PARSE_DATE('%d-%m-%Y', s.week_start_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 WEEK)
+  `;
+  if (filters?.city && filters.city !== 'all') {
+    whereClause += ` AND l.clean_city = '${filters.city}'`;
+  }
+  if (filters?.area && filters.area !== 'all') {
+    whereClause += ` AND l.clean_area = '${filters.area}'`;
+  }
+  if (filters?.cuisine && filters.cuisine !== 'all') {
+    whereClause += ` AND cu.name = '${filters.cuisine}'`;
+  }
+
+  const query = `
+    SELECT
+      s.channel AS channel,
+      l.clean_city AS city,
+      l.clean_area AS area,
+      s.week_start_date AS weekStartDate,
+      EXTRACT(WEEK FROM PARSE_DATE('%d-%m-%Y', s.week_start_date)) AS week,
+      EXTRACT(YEAR FROM PARSE_DATE('%d-%m-%Y', s.week_start_date)) AS year,
+      l.clean_area AS location,
+      cu.name AS cuisine,
+      s.total_orders_count AS orders,
+      s.net_revenue AS netSales,
+      s.gross_revenue AS grossSales,
+      COALESCE(a.spend, 0) AS adsSpend,
+      s.discount AS discountSpend,
+      COALESCE(a.return, 0) AS adsReturn
+    FROM \`vpc-host-prod-fn204-ex958.aisha.l3_legacy_weekly_sales\` AS s
+    LEFT JOIN \`vpc-host-prod-fn204-ex958.aisha.l3_legacy_weekly_ad_campaigns\` AS a
+      ON s.brand_id = a.brand_id
+      AND s.branch_id = a.branch_id
+      AND s.channel = a.channel
+      AND s.week_start_date = a.week_start_date
+    LEFT JOIN \`vpc-host-prod-fn204-ex958.growdash_postgresql.public_branches\` AS b
+      ON CAST(s.branch_id AS INT64) = b.id
+    LEFT JOIN \`vpc-host-prod-fn204-ex958.growdash_postgresql.public_brands\` AS br
+      ON CAST(s.brand_id AS INT64) = br.id
+    LEFT JOIN \`vpc-host-prod-fn204-ex958.growdash_postgresql.public_cuisines\` AS cu
+      ON CAST(br.cuisine_id AS INT64) = cu.id
+    LEFT JOIN \`vpc-host-prod-fn204-ex958.growinsight.l3_growinsight_locations\` AS l
+      ON CAST(b.location_id AS INT64) = l.location_id
+    ${whereClause}
+    ORDER BY year, week, channel, city
+  `;
+
+  try {
+    const [rows] = await client.query({ query });
+    return rows as WeeklySalesData[];
+  } catch (error) {
+    console.error('BigQuery error (weekly):', error);
     throw error;
   }
 }
@@ -137,12 +243,12 @@ export async function fetchFilterOptions(): Promise<{
 
   const queries = {
     months: `
-      SELECT DISTINCT SPLIT(s.month_year, "-")[OFFSET(0)] AS month
+      SELECT DISTINCT SPLIT(s.month_year, "-")[OFFSET(0)] AS month, SPLIT(s.month_year, "-")[OFFSET(1)] AS year
       FROM \`vpc-host-prod-fn204-ex958.aisha.l4_legacy_monthly_sales\` AS s
       LEFT JOIN \`vpc-host-prod-fn204-ex958.growdash_postgresql.public_brands\` AS br
         ON CAST(s.brand_id AS INT64) = br.id
       WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '2025'
-      ORDER BY month
+      ORDER BY year, month
     `,
     cities: `
       SELECT DISTINCT gl.clean_city AS city
@@ -189,7 +295,9 @@ export async function fetchFilterOptions(): Promise<{
     ]);
 
     return {
-      months: monthsResult[0].map((row: { month: string }) => row.month),
+      months: (monthsResult[0] as { month: string; year: string }[])
+        .map((row) => toYYYYMM(row.year, row.month))
+        .sort(),
       cities: citiesResult[0].map((row: { city: string }) => row.city),
       areas: areasResult[0].map((row: { area: string }) => row.area),
       cuisines: cuisinesResult[0].map((row: { cuisine: string }) => row.cuisine),

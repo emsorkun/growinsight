@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Header } from '@/components/layout/header';
 import { FilterBar } from '@/components/layout/filter-bar';
 import { useFilterStore } from '@/store/filter-store';
-import { CHANNEL_COLORS, type AggregatedData, type MonthlyMarketShare, type Channel } from '@/types';
+import { CHANNEL_COLORS, type AggregatedData, type WeeklyMarketShare, type Channel } from '@/types';
 import { formatCurrency, formatPercentage } from '@/lib/data-utils';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -34,7 +34,7 @@ function ChartSkeleton() {
   );
 }
 
-interface DashboardData {
+interface WeeklyDashboardData {
   summary: {
     totalOrders: number;
     totalNetSales: number;
@@ -43,7 +43,7 @@ interface DashboardData {
     totalDiscountSpend: number;
   };
   channelData: AggregatedData[];
-  monthlyData: MonthlyMarketShare[];
+  weeklyData: WeeklyMarketShare[];
   filterOptions: {
     months: string[];
     cities: string[];
@@ -52,25 +52,24 @@ interface DashboardData {
   };
 }
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+export default function WeeklyFiguresPage() {
+  const [data, setData] = useState<WeeklyDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { selectedMonth, selectedCity, selectedArea, selectedCuisine, setOptions } = useFilterStore();
+  const { selectedCity, selectedArea, selectedCuisine, setOptions } = useFilterStore();
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchWeeklyData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams();
-      if (selectedMonth !== 'all') params.set('month', selectedMonth);
       if (selectedCity !== 'all') params.set('city', selectedCity);
       if (selectedArea !== 'all') params.set('area', selectedArea);
       if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
 
-      const response = await fetch(`/api/dashboard?${params.toString()}`);
+      const response = await fetch(`/api/dashboard/weekly?${params.toString()}`);
       const result = await response.json();
 
       if (!result.success) {
@@ -81,24 +80,23 @@ export default function DashboardPage() {
       setOptions(result.data.filterOptions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-      // Set mock data for demo purposes if BigQuery fails
-      setData(getMockData());
+      setData(getMockWeeklyData());
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedCity, selectedArea, selectedCuisine, setOptions]);
+  }, [selectedCity, selectedArea, selectedCuisine, setOptions]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    fetchWeeklyData();
+  }, [fetchWeeklyData]);
 
   if (isLoading) {
     return (
       <div className="flex flex-col">
-        <Header title="Dashboard" subtitle="Food delivery analytics and insights" />
+        <Header title="Weekly Figures" subtitle="Last 12 weeks" />
         <div className="flex-1 space-y-6 p-4 lg:p-6">
           <div className="flex flex-wrap gap-4 rounded-lg border border-border bg-card p-4">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="flex flex-col gap-1.5">
                 <div className="h-3 w-12 animate-pulse rounded bg-muted" />
                 <div className="h-9 w-[160px] animate-pulse rounded-md bg-muted" />
@@ -129,7 +127,7 @@ export default function DashboardPage() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <p className="text-destructive">{error}</p>
-          <button onClick={fetchDashboardData} className="mt-4 text-primary underline">
+          <button onClick={fetchWeeklyData} className="mt-4 text-primary underline">
             Try again
           </button>
         </div>
@@ -138,9 +136,14 @@ export default function DashboardPage() {
   }
 
   const channelData = data?.channelData || [];
-  const monthlyData = data?.monthlyData || [];
+  const weeklyData = data?.weeklyData || [];
 
-  // Prepare chart data
+  // Stacked bar expects { month, marketShare }; use short week label (e.g. W45) for x-axis
+  const stackedBarData = weeklyData.map((w) => ({
+    month: w.weekLabel.replace(/^\d+-/, '') || w.weekLabel,
+    marketShare: w.marketShare,
+  }));
+
   const ordersChartData = channelData.map((d) => ({
     name: d.channel,
     value: d.orders,
@@ -185,10 +188,10 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col">
-      <Header title="Dashboard" subtitle="Food delivery analytics and insights" />
-      
+      <Header title="Weekly Figures" subtitle="Last 12 weeks" />
+
       <div className="flex-1 space-y-6 p-4 lg:p-6">
-        <FilterBar />
+        <FilterBar hideMonth />
 
         {error && (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
@@ -196,19 +199,16 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Row 1: Pie Charts */}
         <div className="grid gap-6 md:grid-cols-2">
           <PieChartCard title="Orders by Channel" data={ordersChartData} />
           <PieChartCard title="Net Sales by Channel" data={netSalesChartData} />
         </div>
 
-        {/* Row 2: Stacked Bar Chart */}
         <StackedBarChartCard
-          title="Monthly Market Share (Orders) by Channel"
-          data={monthlyData}
+          title="Weekly Market Share (Orders) by Channel"
+          data={stackedBarData}
         />
 
-        {/* Row 3: Spend Analysis */}
         <div className="grid gap-6 md:grid-cols-3">
           <BarChartCard
             title="Ads Spend vs Gross Sales"
@@ -230,7 +230,6 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Row 4: ROAS and AOV */}
         <div className="grid gap-6 md:grid-cols-2">
           <BarChartCard
             title="ROAS by Channel"
@@ -248,10 +247,15 @@ export default function DashboardPage() {
   );
 }
 
-// Mock data for demo purposes
-function getMockData(): DashboardData {
+function getMockWeeklyData(): WeeklyDashboardData {
   const channels: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
-  const months = ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10'];
+  const weekLabels = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (11 - i) * 7);
+    const week = Math.ceil(d.getDate() / 7);
+    const year = d.getFullYear();
+    return `${year}-W${String(week).padStart(2, '0')}`;
+  });
 
   const channelData: AggregatedData[] = channels.map((channel, index) => {
     const baseOrders = [50000, 30000, 25000, 15000, 10000][index];
@@ -275,9 +279,8 @@ function getMockData(): DashboardData {
     };
   });
 
-  const monthlyData: MonthlyMarketShare[] = months.map((month) => {
-    const total = 100;
-    let remaining = total;
+  const weeklyData: WeeklyMarketShare[] = weekLabels.map((weekLabel) => {
+    let remaining = 100;
     const marketShare: Record<Channel, number> = {} as Record<Channel, number>;
 
     channels.forEach((channel, index) => {
@@ -291,7 +294,7 @@ function getMockData(): DashboardData {
       }
     });
 
-    return { month, marketShare };
+    return { weekLabel, weekStartDate: weekLabel, marketShare };
   });
 
   return {
@@ -303,9 +306,9 @@ function getMockData(): DashboardData {
       totalDiscountSpend: channelData.reduce((sum, d) => sum + d.discountSpend, 0),
     },
     channelData,
-    monthlyData,
+    weeklyData,
     filterOptions: {
-      months,
+      months: [],
       cities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman'],
       areas: ['Al Barsha', 'JBR', 'Marina', 'Downtown', 'Business Bay', 'DIFC'],
       cuisines: ['American', 'Asian', 'Indian', 'Italian', 'Middle Eastern', 'Mexican'],

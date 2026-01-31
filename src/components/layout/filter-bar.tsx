@@ -53,9 +53,11 @@ function SignalStrengthIndicator({ strength }: { strength: number }) {
 
 interface FilterBarProps {
   showSignalStrength?: boolean;
+  /** Hide month filter (e.g. for weekly figures page) */
+  hideMonth?: boolean;
 }
 
-export function FilterBar({ showSignalStrength = false }: FilterBarProps) {
+export function FilterBar({ showSignalStrength = false, hideMonth = false }: FilterBarProps) {
   const {
     options,
     selectedMonth,
@@ -81,22 +83,24 @@ export function FilterBar({ showSignalStrength = false }: FilterBarProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4">
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Month</label>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="All Months" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Months</SelectItem>
-            {options.months.map((month) => (
-              <SelectItem key={month} value={month}>
-                {month}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {!hideMonth && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground">Month</label>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Months" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {options.months.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">City</label>
