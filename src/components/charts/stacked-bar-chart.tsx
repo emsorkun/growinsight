@@ -1,6 +1,16 @@
 'use client';
 
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  LabelList,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CHANNEL_COLORS, type Channel } from '@/types';
 
@@ -14,7 +24,15 @@ interface StackedBarChartProps {
 
 const CHANNELS: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { dataKey: string; value: number; color: string }[]; label?: string }) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { dataKey: string; value: number; color: string }[];
+  label?: string;
+}) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border bg-background p-3 shadow-lg">
@@ -48,13 +66,13 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={{ stroke: 'var(--border)' }}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={{ stroke: 'var(--border)' }}
@@ -62,17 +80,9 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
                 tickFormatter={(value) => `${Math.round(Number(value))}%`}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                formatter={(value) => value}
-                wrapperStyle={{ paddingTop: '1rem' }}
-              />
+              <Legend formatter={(value) => value} wrapperStyle={{ paddingTop: '1rem' }} />
               {CHANNELS.map((channel) => (
-                <Bar
-                  key={channel}
-                  dataKey={channel}
-                  stackId="a"
-                  fill={CHANNEL_COLORS[channel]}
-                >
+                <Bar key={channel} dataKey={channel} stackId="a" fill={CHANNEL_COLORS[channel]}>
                   <LabelList
                     dataKey={channel}
                     position="center"
@@ -80,11 +90,11 @@ export function StackedBarChartCard({ title, data }: StackedBarChartProps) {
                       const num = Number(value);
                       return num >= 5 ? `${num.toFixed(0)}%` : '';
                     }}
-                    style={{ 
-                      fill: '#fff', 
+                    style={{
+                      fill: '#fff',
                       fontSize: 10,
                       fontWeight: 600,
-                      textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                     }}
                   />
                 </Bar>

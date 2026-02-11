@@ -40,7 +40,8 @@ export default function ChannelMapPage() {
   const [error, setError] = useState<string | null>(null);
   const [hoveredArea, setHoveredArea] = useState<ChannelMapData | null>(null);
 
-  const { options, selectedMonth, selectedCity, selectedCuisine, setOptions } = useFilterStore();
+  const { options, selectedMonths, selectedCities, selectedCuisines, setOptions } =
+    useFilterStore();
 
   // Load filter options when missing (e.g. when landing on channel map first)
   useEffect(() => {
@@ -63,9 +64,9 @@ export default function ChannelMapPage() {
 
     try {
       const params = new URLSearchParams();
-      if (selectedMonth !== 'all') params.set('month', selectedMonth);
-      if (selectedCity !== 'all') params.set('city', selectedCity);
-      if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
+      if (selectedMonths.length > 0) params.set('month', selectedMonths.join(','));
+      if (selectedCities.length > 0) params.set('city', selectedCities.join(','));
+      if (selectedCuisines.length > 0) params.set('cuisine', selectedCuisines.join(','));
 
       const response = await fetch(`/api/channel-map?${params.toString()}`);
       const result = await response.json();
@@ -86,7 +87,7 @@ export default function ChannelMapPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedCity, selectedCuisine]);
+  }, [selectedMonths, selectedCities, selectedCuisines]);
 
   useEffect(() => {
     fetchMapData();
@@ -138,9 +139,7 @@ export default function ChannelMapPage() {
               <CardTitle className="text-lg font-semibold">
                 {hoveredArea ? hoveredArea.area : 'Area Details'}
               </CardTitle>
-              {hoveredArea && (
-                <p className="text-sm text-muted-foreground">{hoveredArea.city}</p>
-              )}
+              {hoveredArea && <p className="text-sm text-muted-foreground">{hoveredArea.city}</p>}
             </CardHeader>
             <CardContent>
               {hoveredArea ? (
@@ -148,7 +147,7 @@ export default function ChannelMapPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Dominant</span>
-                      <span 
+                      <span
                         className="font-medium"
                         style={{ color: CHANNEL_COLORS[hoveredArea.dominantChannel] }}
                       >
@@ -205,8 +204,8 @@ export default function ChannelMapPage() {
                     <th className="text-left py-2 px-2">Area</th>
                     <th className="text-left py-2 px-2">City</th>
                     {CHANNELS.map((ch) => (
-                      <th 
-                        key={ch} 
+                      <th
+                        key={ch}
                         className="text-center py-2 px-2"
                         style={{ color: CHANNEL_COLORS[ch] }}
                       >
@@ -217,11 +216,11 @@ export default function ChannelMapPage() {
                 </thead>
                 <tbody>
                   {filteredData.slice(0, 10).map((row) => (
-                    <tr 
-                      key={row.area} 
+                    <tr
+                      key={row.area}
                       className={cn(
-                        "border-b hover:bg-muted/50 cursor-pointer transition-colors",
-                        hoveredArea?.area === row.area && "bg-muted"
+                        'border-b hover:bg-muted/50 cursor-pointer transition-colors',
+                        hoveredArea?.area === row.area && 'bg-muted'
                       )}
                       onMouseEnter={() => setHoveredArea(row)}
                       onMouseLeave={() => setHoveredArea(null)}
@@ -232,8 +231,8 @@ export default function ChannelMapPage() {
                         <td key={ch} className="py-2 px-2 text-center">
                           <span
                             className={cn(
-                              "px-2 py-0.5 rounded-full text-xs",
-                              row.dominantChannel === ch && "font-semibold"
+                              'px-2 py-0.5 rounded-full text-xs',
+                              row.dominantChannel === ch && 'font-semibold'
                             )}
                             style={{
                               backgroundColor: `${CHANNEL_COLORS[ch]}20`,
@@ -256,11 +255,38 @@ export default function ChannelMapPage() {
   );
 }
 
-function getMockFilterOptions(): { months: string[]; cities: string[]; areas: string[]; cuisines: string[] } {
+function getMockFilterOptions(): {
+  months: string[];
+  cities: string[];
+  areas: string[];
+  cuisines: string[];
+} {
   return {
-    months: ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10'],
+    months: [
+      '2025-01',
+      '2025-02',
+      '2025-03',
+      '2025-04',
+      '2025-05',
+      '2025-06',
+      '2025-07',
+      '2025-08',
+      '2025-09',
+      '2025-10',
+    ],
     cities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman'],
-    areas: ['Downtown Dubai', 'Dubai Marina', 'JBR', 'Business Bay', 'DIFC', 'Al Barsha', 'Jumeirah', 'Deira', 'Palm Jumeirah', 'Silicon Oasis'],
+    areas: [
+      'Downtown Dubai',
+      'Dubai Marina',
+      'JBR',
+      'Business Bay',
+      'DIFC',
+      'Al Barsha',
+      'Jumeirah',
+      'Deira',
+      'Palm Jumeirah',
+      'Silicon Oasis',
+    ],
     cuisines: ['Arabian', 'Indian', 'Pakistani', 'Chinese', 'American', 'Italian', 'Japanese'],
   };
 }
@@ -268,15 +294,15 @@ function getMockFilterOptions(): { months: string[]; cities: string[]; areas: st
 function getMockMapData(): ChannelMapData[] {
   const areas = [
     { area: 'Downtown Dubai', city: 'Dubai', lat: 25.1972, lng: 55.2744 },
-    { area: 'Dubai Marina', city: 'Dubai', lat: 25.0773, lng: 55.1340 },
-    { area: 'JBR', city: 'Dubai', lat: 25.0772, lng: 55.1330 },
+    { area: 'Dubai Marina', city: 'Dubai', lat: 25.0773, lng: 55.134 },
+    { area: 'JBR', city: 'Dubai', lat: 25.0772, lng: 55.133 },
     { area: 'Business Bay', city: 'Dubai', lat: 25.1863, lng: 55.2614 },
-    { area: 'DIFC', city: 'Dubai', lat: 25.2085, lng: 55.2790 },
+    { area: 'DIFC', city: 'Dubai', lat: 25.2085, lng: 55.279 },
     { area: 'Al Barsha', city: 'Dubai', lat: 25.1111, lng: 55.1924 },
-    { area: 'Jumeirah', city: 'Dubai', lat: 25.2117, lng: 55.2530 },
+    { area: 'Jumeirah', city: 'Dubai', lat: 25.2117, lng: 55.253 },
     { area: 'Deira', city: 'Dubai', lat: 25.2716, lng: 55.3135 },
     { area: 'Bur Dubai', city: 'Dubai', lat: 25.2547, lng: 55.2969 },
-    { area: 'Palm Jumeirah', city: 'Dubai', lat: 25.1124, lng: 55.1390 },
+    { area: 'Palm Jumeirah', city: 'Dubai', lat: 25.1124, lng: 55.139 },
     { area: 'Silicon Oasis', city: 'Dubai', lat: 25.1178, lng: 55.3834 },
     { area: 'Abu Dhabi Mall', city: 'Abu Dhabi', lat: 24.4953, lng: 54.3838 },
     { area: 'Al Reem Island', city: 'Abu Dhabi', lat: 24.4993, lng: 54.4112 },
@@ -292,8 +318,9 @@ function getMockMapData(): ChannelMapData[] {
 
     // Generate channel breakdown
     let remaining = 100;
-    const channelBreakdown: Record<Channel, { orders: number; sales: number; share: number }> = {} as Record<Channel, { orders: number; sales: number; share: number }>;
-    
+    const channelBreakdown: Record<Channel, { orders: number; sales: number; share: number }> =
+      {} as Record<Channel, { orders: number; sales: number; share: number }>;
+
     channels.forEach((channel, index) => {
       let share: number;
       if (index === channels.length - 1) {

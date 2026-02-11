@@ -12,7 +12,7 @@ services:
       - ENABLE_DEMO_CREDENTIALS=${ENABLE_DEMO_CREDENTIALS:-false}
       - GOOGLE_CLOUD_PROJECT_ID=vpc-host-prod-fn204-ex958
       - GOOGLE_APPLICATION_CREDENTIALS=/app/vpc-host-prod-fn204-ex958-654b99d94b5d.json
-      - JWT_SECRET=${JWT_SECRET:-growinsight-secret-key-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set — generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"}
     volumes:
       - ./vpc-host-prod-fn204-ex958-654b99d94b5d.json:/app/vpc-host-prod-fn204-ex958-654b99d94b5d.json:ro
     restart: unless-stopped

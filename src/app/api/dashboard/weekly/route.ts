@@ -5,9 +5,9 @@ import { aggregateWeeklyByChannel, calculateWeeklyMarketShare } from '@/lib/data
 
 const WEEKLY_REVALIDATE = 60;
 
-async function getWeeklyDashboardData(city?: string, area?: string, cuisine?: string) {
+async function getWeeklyDashboardData(cities?: string[], areas?: string[], cuisines?: string[]) {
   const [weeklyData, filterOptions] = await Promise.all([
-    fetchWeeklySalesData({ city, area, cuisine }),
+    fetchWeeklySalesData({ cities, areas, cuisines }),
     fetchFilterOptions(),
   ]);
 
@@ -37,13 +37,17 @@ async function getWeeklyDashboardData(city?: string, area?: string, cuisine?: st
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const city = searchParams.get('city') || '';
-    const area = searchParams.get('area') || '';
-    const cuisine = searchParams.get('cuisine') || '';
+    const cityParam = searchParams.get('city') || '';
+    const areaParam = searchParams.get('area') || '';
+    const cuisineParam = searchParams.get('cuisine') || '';
+
+    const cities = cityParam ? cityParam.split(',').filter(Boolean) : undefined;
+    const areas = areaParam ? areaParam.split(',').filter(Boolean) : undefined;
+    const cuisines = cuisineParam ? cuisineParam.split(',').filter(Boolean) : undefined;
 
     const getCachedWeekly = unstable_cache(
-      () => getWeeklyDashboardData(city || undefined, area || undefined, cuisine || undefined),
-      ['dashboard-weekly', city, area, cuisine],
+      () => getWeeklyDashboardData(cities, areas, cuisines),
+      ['dashboard-weekly', cityParam, areaParam, cuisineParam],
       { revalidate: WEEKLY_REVALIDATE }
     );
 

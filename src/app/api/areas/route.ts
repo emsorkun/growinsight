@@ -9,7 +9,11 @@ export async function GET(request: NextRequest) {
     const city = searchParams.get('city') || undefined;
     const cuisine = searchParams.get('cuisine') || undefined;
 
-    const salesData = await fetchSalesData({ month, city, cuisine });
+    const salesData = await fetchSalesData({
+      months: month ? [month] : undefined,
+      cities: city ? [city] : undefined,
+      cuisines: cuisine ? [cuisine] : undefined,
+    });
     const marketShareByArea = calculateMarketShareByAreaExtended(salesData);
 
     return NextResponse.json({
@@ -20,12 +24,14 @@ export async function GET(request: NextRequest) {
     console.error('Areas API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to fetch area data',
-        details: errorMessage.includes('BigQuery configuration') 
-          ? errorMessage 
-          : (process.env.NODE_ENV === 'development' ? errorMessage : 'Check server logs for details')
+        details: errorMessage.includes('BigQuery configuration')
+          ? errorMessage
+          : process.env.NODE_ENV === 'development'
+            ? errorMessage
+            : 'Check server logs for details',
       },
       { status: 500 }
     );

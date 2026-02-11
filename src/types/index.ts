@@ -116,10 +116,10 @@ export interface FilterOptions {
 }
 
 export interface FilterState {
-  selectedMonth: string;
-  selectedCity: string;
-  selectedArea: string;
-  selectedCuisine: string;
+  selectedMonths: string[];
+  selectedCities: string[];
+  selectedAreas: string[];
+  selectedCuisines: string[];
 }
 
 // Auth types
@@ -168,36 +168,84 @@ export interface BarChartData {
 
 // Cuisine icons mapping
 export const CUISINE_ICONS: Record<string, string> = {
-  'American': '🍔',
+  American: '🍔',
   'Fast Food': '🍔',
-  'Asian': '🥢',
-  'Beverages': '☕',
-  'Breakfast': '🥐',
-  'Bakery': '🥐',
-  'Desserts': '🍰',
-  'Sweets': '🍰',
-  'Healthy': '🥗',
+  Asian: '🥢',
+  Beverages: '☕',
+  Breakfast: '🥐',
+  Bakery: '🥐',
+  Desserts: '🍰',
+  Sweets: '🍰',
+  Healthy: '🥗',
   'Special Diets': '🥗',
-  'Indian': '🔥',
-  'International': '🌍',
-  'Italian': '🍝',
-  'Mexican': '🌮',
+  Indian: '🔥',
+  International: '🌍',
+  Italian: '🍝',
+  Mexican: '🌮',
   'Middle Eastern': '🥙',
-  'Seafood': '🐟',
-  'Shawarma': '🥙',
-  'Soup': '🍜',
-  'Turkish': '🥘',
-  'default': '🍽️',
+  Seafood: '🐟',
+  Shawarma: '🥙',
+  Soup: '🍜',
+  Turkish: '🥘',
+  default: '🍽️',
 };
 
 export function getCuisineIcon(cuisine: string): string {
   const normalizedCuisine = cuisine.toLowerCase();
-  
+
   for (const [key, icon] of Object.entries(CUISINE_ICONS)) {
     if (normalizedCuisine.includes(key.toLowerCase())) {
       return icon;
     }
   }
-  
+
   return CUISINE_ICONS.default;
+}
+
+// Tracking types
+export type TrackingEventType = 'login' | 'page_view' | 'filter_change' | 'button_click' | 'logout';
+
+export interface TrackingEvent {
+  id: number;
+  event_type: TrackingEventType;
+  user_id: string | null;
+  username: string | null;
+  user_name: string | null;
+  page: string | null;
+  metadata: Record<string, unknown>;
+  ip_address: string | null;
+  user_agent: string | null;
+  session_id: string | null;
+  created_at: string;
+}
+
+export interface TrackingPayload {
+  event_type: TrackingEventType;
+  page?: string;
+  metadata?: Record<string, unknown>;
+  session_id?: string;
+}
+
+export interface AdminEventsQuery {
+  event_type?: TrackingEventType;
+  username?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface AdminEventsResponse {
+  events: TrackingEvent[];
+  total: number;
+  page: number;
+  limit: number;
+  summary: {
+    totalEvents: number;
+    uniqueUsers: number;
+    eventsByType: Record<string, number>;
+    eventsByDay: { date: string; count: number }[];
+    topPages: { page: string; count: number }[];
+    topUsers: { username: string; name: string; count: number }[];
+  };
 }

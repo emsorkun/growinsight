@@ -22,13 +22,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Loader2, MapPin, Search, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Tag, UtensilsCrossed, TrendingUp } from 'lucide-react';
+  Loader2,
+  MapPin,
+  Search,
+  BarChart3,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Tag,
+  UtensilsCrossed,
+  TrendingUp,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SortColumn = 'area' | 'signalStrength' | Channel;
@@ -62,9 +68,7 @@ function SignalStrengthIndicator({ strength }: { strength: number }) {
           style={{
             height: `${8 + level * 3}px`,
             backgroundColor:
-              level <= strength
-                ? SIGNAL_COLORS.active[level - 1]
-                : SIGNAL_COLORS.inactive,
+              level <= strength ? SIGNAL_COLORS.active[level - 1] : SIGNAL_COLORS.inactive,
           }}
         />
       ))}
@@ -82,7 +86,9 @@ function MarketShareCell({
   color: string;
 }) {
   const intensity = Math.min(value / 100, 1);
-  const backgroundColor = `${color}${Math.round(intensity * 40).toString(16).padStart(2, '0')}`;
+  const backgroundColor = `${color}${Math.round(intensity * 40)
+    .toString(16)
+    .padStart(2, '0')}`;
 
   return (
     <div
@@ -109,14 +115,14 @@ interface CuisineDetailDialogProps {
 function CuisineDetailDialog({ area, open, onClose }: CuisineDetailDialogProps) {
   const [data, setData] = useState<CuisineDetailByArea[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedMonth, selectedCity } = useFilterStore();
+  const { selectedMonths, selectedCities } = useFilterStore();
 
   useEffect(() => {
     if (open && area) {
       const params = new URLSearchParams();
       params.set('area', area);
-      if (selectedMonth !== 'all') params.set('month', selectedMonth);
-      if (selectedCity !== 'all') params.set('city', selectedCity);
+      if (selectedMonths.length > 0) params.set('month', selectedMonths.join(','));
+      if (selectedCities.length > 0) params.set('city', selectedCities.join(','));
 
       void Promise.resolve().then(() => setIsLoading(true));
       fetch(`/api/areas/cuisines?${params.toString()}`)
@@ -134,7 +140,7 @@ function CuisineDetailDialog({ area, open, onClose }: CuisineDetailDialogProps) 
         })
         .finally(() => setIsLoading(false));
     }
-  }, [open, area, selectedMonth, selectedCity]);
+  }, [open, area, selectedMonths, selectedCities]);
 
   const getHighestChannel = (marketShare: Record<Channel, number>): Channel | null => {
     let highest: Channel | null = null;
@@ -231,10 +237,7 @@ const CustomTooltip = ({
         <p className="mb-2 font-medium">{label}</p>
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2 text-sm">
-            <div
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="text-muted-foreground">{entry.dataKey}:</span>
             <span className="font-medium">{entry.value.toFixed(1)}%</span>
           </div>
@@ -248,14 +251,14 @@ const CustomTooltip = ({
 function TrendDialog({ area, open, onClose }: TrendDialogProps) {
   const [data, setData] = useState<AreaMonthlyTrend[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedCity, selectedCuisine } = useFilterStore();
+  const { selectedCities, selectedCuisines } = useFilterStore();
 
   useEffect(() => {
     if (open && area) {
       const params = new URLSearchParams();
       params.set('area', area);
-      if (selectedCity !== 'all') params.set('city', selectedCity);
-      if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
+      if (selectedCities.length > 0) params.set('city', selectedCities.join(','));
+      if (selectedCuisines.length > 0) params.set('cuisine', selectedCuisines.join(','));
 
       void Promise.resolve().then(() => setIsLoading(true));
       fetch(`/api/areas/trends?${params.toString()}`)
@@ -272,7 +275,7 @@ function TrendDialog({ area, open, onClose }: TrendDialogProps) {
         })
         .finally(() => setIsLoading(false));
     }
-  }, [open, area, selectedCity, selectedCuisine]);
+  }, [open, area, selectedCities, selectedCuisines]);
 
   const chartData = data.map((item) => ({
     month: item.month,
@@ -357,7 +360,7 @@ interface WeeklyTrendDialogProps {
 function WeeklyTrendDialog({ area, open, onClose }: WeeklyTrendDialogProps) {
   const [data, setData] = useState<WeeklyTrendData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedCity, selectedCuisine } = useFilterStore();
+  const { selectedCities, selectedCuisines } = useFilterStore();
 
   useEffect(() => {
     if (open && area) {
@@ -368,7 +371,7 @@ function WeeklyTrendDialog({ area, open, onClose }: WeeklyTrendDialogProps) {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [open, area, selectedCity, selectedCuisine]);
+  }, [open, area, selectedCities, selectedCuisines]);
 
   const chartData = data.map((item) => ({
     week: item.weekLabel,
@@ -439,7 +442,11 @@ function WeeklyTrendDialog({ area, open, onClose }: WeeklyTrendDialogProps) {
                     <TableRow className="text-xs">
                       <TableHead className="py-2">Week</TableHead>
                       {CHANNELS.map((channel) => (
-                        <TableHead key={channel} className="text-center py-2" style={{ color: CHANNEL_COLORS[channel] }}>
+                        <TableHead
+                          key={channel}
+                          className="text-center py-2"
+                          style={{ color: CHANNEL_COLORS[channel] }}
+                        >
                           {channel}
                         </TableHead>
                       ))}
@@ -471,20 +478,20 @@ function getMockWeeklyTrendData(): WeeklyTrendData[] {
   // Generate last 5 complete weeks
   const today = new Date();
   const weeks: WeeklyTrendData[] = [];
-  
+
   // Find the start of the current week (Sunday)
   const currentWeekStart = new Date(today);
   currentWeekStart.setDate(today.getDate() - today.getDay());
-  
+
   for (let i = 5; i >= 1; i--) {
     const weekStart = new Date(currentWeekStart);
-    weekStart.setDate(currentWeekStart.getDate() - (i * 7));
+    weekStart.setDate(currentWeekStart.getDate() - i * 7);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    
+
     const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
     const week = `W${6 - i}`;
-    
+
     const total = 100;
     let remaining = total;
     const marketShare: Record<Channel, number> = {} as Record<Channel, number>;
@@ -504,7 +511,7 @@ function getMockWeeklyTrendData(): WeeklyTrendData[] {
 
     weeks.push({ week, weekLabel, marketShare });
   }
-  
+
   return weeks;
 }
 
@@ -538,10 +545,7 @@ const AdsDiscountTooltip = ({
         <p className="mb-2 font-medium">{label}</p>
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2 text-sm">
-            <div
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="text-muted-foreground">{entry.name}:</span>
             <span className="font-medium">{entry.value.toFixed(1)}%</span>
           </div>
@@ -555,7 +559,7 @@ const AdsDiscountTooltip = ({
 function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
   const [data, setData] = useState<AdsDiscountActivity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedMonth, selectedCity } = useFilterStore();
+  const { selectedMonths, selectedCities } = useFilterStore();
 
   useEffect(() => {
     if (open && area) {
@@ -566,7 +570,7 @@ function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [open, area, selectedMonth, selectedCity]);
+  }, [open, area, selectedMonths, selectedCities]);
 
   // Only include channels with ads for the ads chart
   const chartData = data.map((item) => ({
@@ -575,21 +579,30 @@ function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
     'Discount % of GMV': item.discountPercentGMV,
   }));
 
-  const channelsWithAds = data.filter(item => item.hasAds);
-  const avgAdsPercent = channelsWithAds.length > 0 
-    ? channelsWithAds.reduce((sum, item) => sum + (item.adsPercentGMV || 0), 0) / channelsWithAds.length 
-    : 0;
-  const avgDiscountPercent = data.length > 0 
-    ? data.reduce((sum, item) => sum + item.discountPercentGMV, 0) / data.length 
-    : 0;
-  const highestAdsChannel = channelsWithAds.length > 0 
-    ? channelsWithAds.reduce((max, item) => 
-        (item.adsPercentGMV || 0) > (max.adsPercentGMV || 0) ? item : max, channelsWithAds[0])
-    : null;
-  const highestDiscountChannel = data.length > 0 
-    ? data.reduce((max, item) => 
-        item.discountPercentGMV > max.discountPercentGMV ? item : max, data[0])
-    : null;
+  const channelsWithAds = data.filter((item) => item.hasAds);
+  const avgAdsPercent =
+    channelsWithAds.length > 0
+      ? channelsWithAds.reduce((sum, item) => sum + (item.adsPercentGMV || 0), 0) /
+        channelsWithAds.length
+      : 0;
+  const avgDiscountPercent =
+    data.length > 0
+      ? data.reduce((sum, item) => sum + item.discountPercentGMV, 0) / data.length
+      : 0;
+  const highestAdsChannel =
+    channelsWithAds.length > 0
+      ? channelsWithAds.reduce(
+          (max, item) => ((item.adsPercentGMV || 0) > (max.adsPercentGMV || 0) ? item : max),
+          channelsWithAds[0]
+        )
+      : null;
+  const highestDiscountChannel =
+    data.length > 0
+      ? data.reduce(
+          (max, item) => (item.discountPercentGMV > max.discountPercentGMV ? item : max),
+          data[0]
+        )
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -608,18 +621,36 @@ function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Avg Discount:</span>
-                <span className="font-semibold text-orange-600">{avgDiscountPercent.toFixed(1)}%</span>
+                <span className="font-semibold text-orange-600">
+                  {avgDiscountPercent.toFixed(1)}%
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Top Ads:</span>
-                <span className="font-semibold" style={{ color: highestAdsChannel?.channel ? CHANNEL_COLORS[highestAdsChannel.channel] : undefined }}>
-                  {highestAdsChannel?.channel || '-'} ({highestAdsChannel?.adsPercentGMV?.toFixed(1) || 0}%)
+                <span
+                  className="font-semibold"
+                  style={{
+                    color: highestAdsChannel?.channel
+                      ? CHANNEL_COLORS[highestAdsChannel.channel]
+                      : undefined,
+                  }}
+                >
+                  {highestAdsChannel?.channel || '-'} (
+                  {highestAdsChannel?.adsPercentGMV?.toFixed(1) || 0}%)
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Top Discount:</span>
-                <span className="font-semibold" style={{ color: highestDiscountChannel?.channel ? CHANNEL_COLORS[highestDiscountChannel.channel] : undefined }}>
-                  {highestDiscountChannel?.channel || '-'} ({highestDiscountChannel?.discountPercentGMV?.toFixed(1) ?? '0'}%)
+                <span
+                  className="font-semibold"
+                  style={{
+                    color: highestDiscountChannel?.channel
+                      ? CHANNEL_COLORS[highestDiscountChannel.channel]
+                      : undefined,
+                  }}
+                >
+                  {highestDiscountChannel?.channel || '-'} (
+                  {highestDiscountChannel?.discountPercentGMV?.toFixed(1) ?? '0'}%)
                 </span>
               </div>
             </div>
@@ -680,15 +711,28 @@ function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
                   <TableBody>
                     {data.map((row) => (
                       <TableRow key={row.channel} className="text-sm">
-                        <TableCell className="py-2 font-medium" style={{ color: CHANNEL_COLORS[row.channel] }}>
+                        <TableCell
+                          className="py-2 font-medium"
+                          style={{ color: CHANNEL_COLORS[row.channel] }}
+                        >
                           {row.channel}
                         </TableCell>
                         <TableCell className="text-right py-2">
-                          {row.hasAds ? `${row.adsPercentGMV?.toFixed(1)}%` : <span className="text-muted-foreground">-</span>}
+                          {row.hasAds ? (
+                            `${row.adsPercentGMV?.toFixed(1)}%`
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
-                        <TableCell className="text-right py-2">{row.discountPercentGMV.toFixed(1)}%</TableCell>
-                        <TableCell className="text-right py-2 font-medium">{row.totalSpendPercentGMV.toFixed(1)}%</TableCell>
-                        <TableCell className="text-right py-2">{row.marketShare.toFixed(1)}%</TableCell>
+                        <TableCell className="text-right py-2">
+                          {row.discountPercentGMV.toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-right py-2 font-medium">
+                          {row.totalSpendPercentGMV.toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-right py-2">
+                          {row.marketShare.toFixed(1)}%
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -705,43 +749,45 @@ function AdsDiscountDialog({ area, open, onClose }: AdsDiscountDialogProps) {
 
 function getMockAdsDiscountData(): AdsDiscountActivity[] {
   const channels: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
-  
+
   // Channels that have ads programs - Keeta does NOT have ads
   const channelsWithAds: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon'];
-  
+
   return channels.map((channel) => {
     const hasAds = channelsWithAds.includes(channel);
-    
+
     // Ads as % of GMV (only for channels with ads)
     const adsPercentMap: Partial<Record<Channel, number>> = {
-      'Talabat': 4.5,
-      'Deliveroo': 3.8,
-      'Careem': 3.2,
-      'Noon': 2.8,
+      Talabat: 4.5,
+      Deliveroo: 3.8,
+      Careem: 3.2,
+      Noon: 2.8,
     };
     const baseAdsPercent = hasAds ? (adsPercentMap[channel] ?? 3.0) : null;
-    
+
     // Discount as % of GMV
-    const baseDiscountPercent = {
-      'Talabat': 5.2,
-      'Deliveroo': 4.5,
-      'Careem': 6.8,
-      'Noon': 8.5,
-      'Keeta': 7.2, // Keeta relies more on discounts since no ads
-    }[channel] || 5.0;
-    
+    const baseDiscountPercent =
+      {
+        Talabat: 5.2,
+        Deliveroo: 4.5,
+        Careem: 6.8,
+        Noon: 8.5,
+        Keeta: 7.2, // Keeta relies more on discounts since no ads
+      }[channel] || 5.0;
+
     const variation = () => (Math.random() - 0.5) * 0.4 + 1;
     const adsPercentGMV = hasAds && baseAdsPercent ? baseAdsPercent * variation() : null;
     const discountPercentGMV = baseDiscountPercent * variation();
-    
-    const marketShare = {
-      'Talabat': 55,
-      'Deliveroo': 15,
-      'Careem': 15,
-      'Noon': 10,
-      'Keeta': 5,
-    }[channel] || 10;
-    
+
+    const marketShare =
+      {
+        Talabat: 55,
+        Deliveroo: 15,
+        Careem: 15,
+        Noon: 10,
+        Keeta: 5,
+      }[channel] || 10;
+
     return {
       channel,
       adsPercentGMV,
@@ -771,7 +817,7 @@ function SortableHeader({
   style?: React.CSSProperties;
 }) {
   const isActive = currentSort === column;
-  
+
   return (
     <TableHead
       className={cn('cursor-pointer select-none hover:bg-muted/50 transition-colors', className)}
@@ -806,7 +852,8 @@ export default function AreaLevelPage() {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  const { selectedMonth, selectedCity, selectedCuisine, selectedSignalStrengths } = useFilterStore();
+  const { selectedMonths, selectedCities, selectedCuisines, selectedSignalStrengths } =
+    useFilterStore();
 
   const fetchAreaData = useCallback(async () => {
     setIsLoading(true);
@@ -814,9 +861,9 @@ export default function AreaLevelPage() {
 
     try {
       const params = new URLSearchParams();
-      if (selectedMonth !== 'all') params.set('month', selectedMonth);
-      if (selectedCity !== 'all') params.set('city', selectedCity);
-      if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
+      if (selectedMonths.length > 0) params.set('month', selectedMonths.join(','));
+      if (selectedCities.length > 0) params.set('city', selectedCities.join(','));
+      if (selectedCuisines.length > 0) params.set('cuisine', selectedCuisines.join(','));
 
       const response = await fetch(`/api/areas?${params.toString()}`);
       const result = await response.json();
@@ -833,42 +880,43 @@ export default function AreaLevelPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedCity, selectedCuisine]);
+  }, [selectedMonths, selectedCities, selectedCuisines]);
 
   useEffect(() => {
     fetchAreaData();
   }, [fetchAreaData]);
 
-  const handleSort = useCallback((column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortColumn(column);
-      setSortDirection('desc');
-    }
-  }, [sortColumn]);
+  const handleSort = useCallback(
+    (column: SortColumn) => {
+      if (sortColumn === column) {
+        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortColumn(column);
+        setSortDirection('desc');
+      }
+    },
+    [sortColumn]
+  );
 
   const filteredData = useMemo(() => {
     let result = data;
-    
+
     // Apply search filter
     if (searchQuery) {
-      result = result.filter((item) =>
-        item.area.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      result = result.filter((item) => item.area.toLowerCase().includes(searchQuery.toLowerCase()));
     }
-    
+
     // Apply signal strength filter (multi-select)
     if (selectedSignalStrengths.length > 0) {
       result = result.filter((item) => selectedSignalStrengths.includes(item.signalStrength));
     }
-    
+
     // Apply sorting
     if (sortColumn) {
       result = [...result].sort((a, b) => {
         let aValue: number | string;
         let bValue: number | string;
-        
+
         if (sortColumn === 'area') {
           aValue = a.area.toLowerCase();
           bValue = b.area.toLowerCase();
@@ -880,19 +928,19 @@ export default function AreaLevelPage() {
           aValue = a.marketShare[sortColumn] || 0;
           bValue = b.marketShare[sortColumn] || 0;
         }
-        
+
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc' 
-            ? aValue.localeCompare(bValue) 
+          return sortDirection === 'asc'
+            ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
         }
-        
-        return sortDirection === 'asc' 
-          ? (aValue as number) - (bValue as number) 
+
+        return sortDirection === 'asc'
+          ? (aValue as number) - (bValue as number)
           : (bValue as number) - (aValue as number);
       });
     }
-    
+
     return result;
   }, [data, searchQuery, selectedSignalStrengths, sortColumn, sortDirection]);
 

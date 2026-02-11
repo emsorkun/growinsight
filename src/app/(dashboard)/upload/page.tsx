@@ -78,9 +78,7 @@ export default function UploadPage() {
     for (let i = 0; i < files.length; i++) {
       if (files[i].status === 'pending') {
         setFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: 'uploading' as const } : f
-          )
+          prev.map((f, idx) => (idx === i ? { ...f, status: 'uploading' as const } : f))
         );
 
         // Simulate API call
@@ -94,9 +92,7 @@ export default function UploadPage() {
               ? {
                   ...f,
                   status: success ? ('success' as const) : ('error' as const),
-                  message: success
-                    ? 'File processed successfully'
-                    : 'Error processing file',
+                  message: success ? 'File processed successfully' : 'Error processing file',
                 }
               : f
           )
@@ -131,7 +127,8 @@ export default function UploadPage() {
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Expected CSV Format</p>
               <code className="text-xs bg-blue-100 px-2 py-1 rounded block overflow-x-auto">
-                Channel, City, Month_Year, Month, Year, Location, Cuisine, Brand_Name, Orders, Net_Sales, Gross_Sales, Ads_Spend, Discount_Spend, Ads_Return
+                Channel, City, Month_Year, Month, Year, Location, Cuisine, Brand_Name, Orders,
+                Net_Sales, Gross_Sales, Ads_Spend, Discount_Spend, Ads_Return
               </code>
             </div>
           </CardContent>
@@ -141,9 +138,7 @@ export default function UploadPage() {
         <Card>
           <CardHeader>
             <CardTitle>Upload Files</CardTitle>
-            <CardDescription>
-              Drag and drop CSV files or click to browse
-            </CardDescription>
+            <CardDescription>Drag and drop CSV files or click to browse</CardDescription>
           </CardHeader>
           <CardContent>
             <div
@@ -172,10 +167,7 @@ export default function UploadPage() {
                   )}
                 >
                   <Upload
-                    className={cn(
-                      'h-8 w-8',
-                      isDragging ? 'text-primary' : 'text-muted-foreground'
-                    )}
+                    className={cn('h-8 w-8', isDragging ? 'text-primary' : 'text-muted-foreground')}
                   />
                 </div>
                 <div className="text-center">
@@ -204,12 +196,8 @@ export default function UploadPage() {
                         {successCount} uploaded
                       </Badge>
                     )}
-                    {pendingCount > 0 && (
-                      <Badge variant="secondary">{pendingCount} pending</Badge>
-                    )}
-                    {errorCount > 0 && (
-                      <Badge variant="destructive">{errorCount} failed</Badge>
-                    )}
+                    {pendingCount > 0 && <Badge variant="secondary">{pendingCount} pending</Badge>}
+                    {errorCount > 0 && <Badge variant="destructive">{errorCount} failed</Badge>}
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={clearAll}>
@@ -235,15 +223,11 @@ export default function UploadPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {file.status === 'pending' && (
-                        <Badge variant="outline">Pending</Badge>
-                      )}
+                      {file.status === 'pending' && <Badge variant="outline">Pending</Badge>}
                       {file.status === 'uploading' && (
                         <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       )}
-                      {file.status === 'success' && (
-                        <Check className="h-5 w-5 text-green-600" />
-                      )}
+                      {file.status === 'success' && <Check className="h-5 w-5 text-green-600" />}
                       {file.status === 'error' && (
                         <AlertCircle className="h-5 w-5 text-destructive" />
                       )}

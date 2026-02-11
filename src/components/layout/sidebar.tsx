@@ -19,6 +19,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect, createContext, useContext } from 'react';
+import { trackLogout, trackButtonClick } from '@/lib/tracking-client';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -43,22 +44,31 @@ export const useSidebar = () => useContext(SidebarContext);
 
 function Logo({ isCollapsed }: { isCollapsed: boolean }) {
   return (
-    <Link href="/dashboard" className={cn("flex items-center py-6", isCollapsed ? "px-2 justify-center" : "px-4")}>
+    <Link
+      href="/dashboard"
+      className={cn('flex items-center py-6', isCollapsed ? 'px-2 justify-center' : 'px-4')}
+    >
       <img
         src="/growinsight-square.png"
         alt="GrowInsight"
-        className={cn("h-8 w-8", isCollapsed ? "block" : "hidden")}
+        className={cn('h-8 w-8', isCollapsed ? 'block' : 'hidden')}
       />
       <img
         src="/growinsight-logo.png"
         alt="GrowInsight"
-        className={cn("h-9 w-auto", isCollapsed ? "hidden" : "block")}
+        className={cn('h-9 w-auto', isCollapsed ? 'hidden' : 'block')}
       />
     </Link>
   );
 }
 
-function NavItems({ onItemClick, isCollapsed }: { onItemClick?: () => void; isCollapsed?: boolean }) {
+function NavItems({
+  onItemClick,
+  isCollapsed,
+}: {
+  onItemClick?: () => void;
+  isCollapsed?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
@@ -69,7 +79,10 @@ function NavItems({ onItemClick, isCollapsed }: { onItemClick?: () => void; isCo
           <Link
             key={item.name}
             href={item.href}
-            onClick={onItemClick}
+            onClick={() => {
+              trackButtonClick('nav_link', { name: item.name, href: item.href });
+              onItemClick?.();
+            }}
             title={isCollapsed ? item.name : undefined}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
@@ -93,6 +106,7 @@ function UserInfo({ isCollapsed }: { isCollapsed: boolean }) {
   const { user, logout } = useAuthStore();
 
   const handleLogout = async () => {
+    trackLogout();
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
@@ -167,9 +181,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarContext.Provider
-      value={{ isCollapsed, setIsCollapsed, toggleCollapsed }}
-    >
+    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, toggleCollapsed }}>
       {children}
     </SidebarContext.Provider>
   );
@@ -186,11 +198,7 @@ export function SidebarTrigger() {
       className="hidden lg:flex h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
       aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
     >
-      {isCollapsed ? (
-        <ChevronRight className="h-4 w-4" />
-      ) : (
-        <ChevronLeft className="h-4 w-4" />
-      )}
+      {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
     </Button>
   );
 }

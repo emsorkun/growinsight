@@ -5,10 +5,11 @@ describe('Filter Store', () => {
   beforeEach(() => {
     // Reset store state before each test
     useFilterStore.setState({
-      selectedMonth: 'all',
-      selectedCity: 'all',
-      selectedArea: 'all',
-      selectedCuisine: 'all',
+      selectedMonths: [],
+      selectedCities: [],
+      selectedAreas: [],
+      selectedCuisines: [],
+      selectedSignalStrengths: [],
       options: {
         months: [],
         cities: [],
@@ -18,39 +19,75 @@ describe('Filter Store', () => {
     });
   });
 
-  describe('setSelectedMonth', () => {
-    it('should update selected month', () => {
-      useFilterStore.getState().setSelectedMonth('2025-01');
-      expect(useFilterStore.getState().selectedMonth).toBe('2025-01');
+  describe('toggleMonth', () => {
+    it('should add a month when toggled on', () => {
+      useFilterStore.getState().toggleMonth('2025-01');
+      expect(useFilterStore.getState().selectedMonths).toEqual(['2025-01']);
+    });
+
+    it('should remove a month when toggled off', () => {
+      useFilterStore.getState().toggleMonth('2025-01');
+      useFilterStore.getState().toggleMonth('2025-01');
+      expect(useFilterStore.getState().selectedMonths).toEqual([]);
+    });
+
+    it('should support multiple months', () => {
+      useFilterStore.getState().toggleMonth('2025-03');
+      useFilterStore.getState().toggleMonth('2025-01');
+      expect(useFilterStore.getState().selectedMonths).toEqual(['2025-01', '2025-03']);
     });
   });
 
-  describe('setSelectedCity', () => {
-    it('should update selected city', () => {
-      useFilterStore.getState().setSelectedCity('Dubai');
-      expect(useFilterStore.getState().selectedCity).toBe('Dubai');
+  describe('toggleCity', () => {
+    it('should add a city when toggled on', () => {
+      useFilterStore.getState().toggleCity('Dubai');
+      expect(useFilterStore.getState().selectedCities).toEqual(['Dubai']);
     });
 
-    it('should reset area when city changes', () => {
-      useFilterStore.getState().setSelectedArea('Marina');
-      useFilterStore.getState().setSelectedCity('Abu Dhabi');
+    it('should remove a city when toggled off', () => {
+      useFilterStore.getState().toggleCity('Dubai');
+      useFilterStore.getState().toggleCity('Dubai');
+      expect(useFilterStore.getState().selectedCities).toEqual([]);
+    });
 
-      expect(useFilterStore.getState().selectedCity).toBe('Abu Dhabi');
-      expect(useFilterStore.getState().selectedArea).toBe('all');
+    it('should support multiple cities', () => {
+      useFilterStore.getState().toggleCity('Dubai');
+      useFilterStore.getState().toggleCity('Abu Dhabi');
+      expect(useFilterStore.getState().selectedCities).toEqual(['Abu Dhabi', 'Dubai']);
+    });
+
+    it('should reset areas when city changes', () => {
+      useFilterStore.getState().toggleArea('Marina');
+      useFilterStore.getState().toggleCity('Abu Dhabi');
+
+      expect(useFilterStore.getState().selectedCities).toEqual(['Abu Dhabi']);
+      expect(useFilterStore.getState().selectedAreas).toEqual([]);
     });
   });
 
-  describe('setSelectedArea', () => {
-    it('should update selected area', () => {
-      useFilterStore.getState().setSelectedArea('Marina');
-      expect(useFilterStore.getState().selectedArea).toBe('Marina');
+  describe('toggleArea', () => {
+    it('should add an area when toggled on', () => {
+      useFilterStore.getState().toggleArea('Marina');
+      expect(useFilterStore.getState().selectedAreas).toEqual(['Marina']);
+    });
+
+    it('should remove an area when toggled off', () => {
+      useFilterStore.getState().toggleArea('Marina');
+      useFilterStore.getState().toggleArea('Marina');
+      expect(useFilterStore.getState().selectedAreas).toEqual([]);
     });
   });
 
-  describe('setSelectedCuisine', () => {
-    it('should update selected cuisine', () => {
-      useFilterStore.getState().setSelectedCuisine('Italian');
-      expect(useFilterStore.getState().selectedCuisine).toBe('Italian');
+  describe('toggleCuisine', () => {
+    it('should add a cuisine when toggled on', () => {
+      useFilterStore.getState().toggleCuisine('Italian');
+      expect(useFilterStore.getState().selectedCuisines).toEqual(['Italian']);
+    });
+
+    it('should remove a cuisine when toggled off', () => {
+      useFilterStore.getState().toggleCuisine('Italian');
+      useFilterStore.getState().toggleCuisine('Italian');
+      expect(useFilterStore.getState().selectedCuisines).toEqual([]);
     });
   });
 
@@ -74,19 +111,19 @@ describe('Filter Store', () => {
   describe('resetFilters', () => {
     it('should reset all filters to default', () => {
       // Set some filters
-      useFilterStore.getState().setSelectedMonth('2025-01');
-      useFilterStore.getState().setSelectedCity('Dubai');
-      useFilterStore.getState().setSelectedArea('Marina');
-      useFilterStore.getState().setSelectedCuisine('Italian');
+      useFilterStore.getState().toggleMonth('2025-01');
+      useFilterStore.getState().toggleCity('Dubai');
+      useFilterStore.getState().toggleArea('Marina');
+      useFilterStore.getState().toggleCuisine('Italian');
 
       // Reset
       useFilterStore.getState().resetFilters();
 
       const state = useFilterStore.getState();
-      expect(state.selectedMonth).toBe('all');
-      expect(state.selectedCity).toBe('all');
-      expect(state.selectedArea).toBe('all');
-      expect(state.selectedCuisine).toBe('all');
+      expect(state.selectedMonths).toEqual([]);
+      expect(state.selectedCities).toEqual([]);
+      expect(state.selectedAreas).toEqual([]);
+      expect(state.selectedCuisines).toEqual([]);
     });
   });
 });

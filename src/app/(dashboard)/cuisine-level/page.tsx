@@ -41,7 +41,7 @@ function SortableHeader({
   style?: React.CSSProperties;
 }) {
   const isActive = currentSort === column;
-  
+
   return (
     <TableHead
       className={cn('cursor-pointer select-none hover:bg-muted/50 transition-colors', className)}
@@ -72,7 +72,7 @@ export default function CuisineLevelPage() {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  const { selectedMonth, selectedCity, selectedArea } = useFilterStore();
+  const { selectedMonths, selectedCities, selectedAreas } = useFilterStore();
 
   const fetchCuisineData = useCallback(async () => {
     setIsLoading(true);
@@ -80,9 +80,9 @@ export default function CuisineLevelPage() {
 
     try {
       const params = new URLSearchParams();
-      if (selectedMonth !== 'all') params.set('month', selectedMonth);
-      if (selectedCity !== 'all') params.set('city', selectedCity);
-      if (selectedArea !== 'all') params.set('area', selectedArea);
+      if (selectedMonths.length > 0) params.set('month', selectedMonths.join(','));
+      if (selectedCities.length > 0) params.set('city', selectedCities.join(','));
+      if (selectedAreas.length > 0) params.set('area', selectedAreas.join(','));
 
       const response = await fetch(`/api/cuisines?${params.toString()}`);
       const result = await response.json();
@@ -99,37 +99,40 @@ export default function CuisineLevelPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedCity, selectedArea]);
+  }, [selectedMonths, selectedCities, selectedAreas]);
 
   useEffect(() => {
     fetchCuisineData();
   }, [fetchCuisineData]);
 
-  const handleSort = useCallback((column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortColumn(column);
-      setSortDirection('desc');
-    }
-  }, [sortColumn]);
+  const handleSort = useCallback(
+    (column: SortColumn) => {
+      if (sortColumn === column) {
+        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortColumn(column);
+        setSortDirection('desc');
+      }
+    },
+    [sortColumn]
+  );
 
   const filteredData = useMemo(() => {
     let result = data;
-    
+
     // Apply search filter
     if (searchQuery) {
       result = result.filter((item) =>
         item.cuisine.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     // Apply sorting
     if (sortColumn) {
       result = [...result].sort((a, b) => {
         let aValue: number | string;
         let bValue: number | string;
-        
+
         if (sortColumn === 'cuisine') {
           aValue = a.cuisine.toLowerCase();
           bValue = b.cuisine.toLowerCase();
@@ -138,19 +141,19 @@ export default function CuisineLevelPage() {
           aValue = a.marketShare[sortColumn] || 0;
           bValue = b.marketShare[sortColumn] || 0;
         }
-        
+
         if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc' 
-            ? aValue.localeCompare(bValue) 
+          return sortDirection === 'asc'
+            ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
         }
-        
-        return sortDirection === 'asc' 
-          ? (aValue as number) - (bValue as number) 
+
+        return sortDirection === 'asc'
+          ? (aValue as number) - (bValue as number)
           : (bValue as number) - (aValue as number);
       });
     }
-    
+
     return result;
   }, [data, searchQuery, sortColumn, sortDirection]);
 
@@ -251,8 +254,7 @@ export default function CuisineLevelPage() {
                                 key={channel}
                                 className={cn(
                                   'text-center',
-                                  highestChannel === channel &&
-                                    'font-semibold'
+                                  highestChannel === channel && 'font-semibold'
                                 )}
                                 style={
                                   highestChannel === channel

@@ -6,9 +6,14 @@ import { apiError } from '@/lib/api-utils';
 
 const DASHBOARD_REVALIDATE = 60; // 1 min – balance freshness and speed
 
-async function getDashboardData(month?: string, city?: string, area?: string, cuisine?: string) {
+async function getDashboardData(
+  months?: string[],
+  cities?: string[],
+  areas?: string[],
+  cuisines?: string[]
+) {
   const [salesData, filterOptions] = await Promise.all([
-    fetchSalesData({ month, city, area, cuisine }),
+    fetchSalesData({ months, cities, areas, cuisines }),
     fetchFilterOptions(),
   ]);
 
@@ -38,20 +43,19 @@ async function getDashboardData(month?: string, city?: string, area?: string, cu
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const month = searchParams.get('month') || '';
-    const city = searchParams.get('city') || '';
-    const area = searchParams.get('area') || '';
-    const cuisine = searchParams.get('cuisine') || '';
+    const monthParam = searchParams.get('month') || '';
+    const cityParam = searchParams.get('city') || '';
+    const areaParam = searchParams.get('area') || '';
+    const cuisineParam = searchParams.get('cuisine') || '';
+
+    const months = monthParam ? monthParam.split(',').filter(Boolean) : undefined;
+    const cities = cityParam ? cityParam.split(',').filter(Boolean) : undefined;
+    const areas = areaParam ? areaParam.split(',').filter(Boolean) : undefined;
+    const cuisines = cuisineParam ? cuisineParam.split(',').filter(Boolean) : undefined;
 
     const getCachedDashboard = unstable_cache(
-      () =>
-        getDashboardData(
-          month || undefined,
-          city || undefined,
-          area || undefined,
-          cuisine || undefined
-        ),
-      ['dashboard', month, city, area, cuisine],
+      () => getDashboardData(months, cities, areas, cuisines),
+      ['dashboard', monthParam, cityParam, areaParam, cuisineParam],
       { revalidate: DASHBOARD_REVALIDATE }
     );
 
@@ -68,10 +72,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     return apiError(error, 'Failed to fetch dashboard data', {
-      exposeMessage: !!(
-        error instanceof Error &&
-        error.message.includes('BigQuery configuration')
-      ),
+      exposeMessage: !!(error instanceof Error && error.message.includes('BigQuery configuration')),
     });
   }
 }

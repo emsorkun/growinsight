@@ -5,11 +5,10 @@ import { fetchFilterOptions } from '@/lib/bigquery';
 const CACHE_TAG = 'filter-options';
 const REVALIDATE_SECONDS = 300; // 5 min – options change rarely
 
-const getCachedFilterOptions = unstable_cache(
-  async () => fetchFilterOptions(),
-  [CACHE_TAG],
-  { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-);
+const getCachedFilterOptions = unstable_cache(async () => fetchFilterOptions(), [CACHE_TAG], {
+  revalidate: REVALIDATE_SECONDS,
+  tags: [CACHE_TAG],
+});
 
 export async function GET() {
   try {

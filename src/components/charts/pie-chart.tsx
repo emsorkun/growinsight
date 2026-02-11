@@ -1,6 +1,13 @@
 'use client';
 
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import {
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface PieChartData {
@@ -14,15 +21,19 @@ interface PieChartProps {
   data: PieChartData[];
 }
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { name: string; value: number; payload: PieChartData }[] }) => {
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number; payload: PieChartData }[];
+}) => {
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
       <div className="rounded-lg border bg-background p-3 shadow-lg">
         <p className="font-medium">{data.name}</p>
-        <p className="text-sm text-muted-foreground">
-          {data.value.toFixed(1)}%
-        </p>
+        <p className="text-sm text-muted-foreground">{data.value.toFixed(1)}%</p>
       </div>
     );
   }
@@ -57,7 +68,13 @@ export function PieChartCard({ title, data }: PieChartProps) {
                 strokeWidth={0}
                 label={({ cx, cy, midAngle, outerRadius, value }) => {
                   if (value === undefined || value < 5) return null; // Hide labels for very small slices
-                  if (cx === undefined || cy === undefined || midAngle === undefined || outerRadius === undefined) return null;
+                  if (
+                    cx === undefined ||
+                    cy === undefined ||
+                    midAngle === undefined ||
+                    outerRadius === undefined
+                  )
+                    return null;
                   const RADIAN = Math.PI / 180;
                   const radius = outerRadius + 20;
                   const x = cx + radius * Math.cos(-midAngle * RADIAN);

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth-store';
+import { trackLogin } from '@/lib/tracking-client';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -79,7 +80,8 @@ export default function LoginPage() {
         return;
       }
 
-      login(result.data.token, result.data.user);
+      login(result.data.user);
+      trackLogin();
       router.push('/dashboard');
     } catch {
       setError('An unexpected error occurred');
@@ -105,9 +107,7 @@ export default function LoginPage() {
                 />
               </div>
               <CardTitle className="text-2xl font-semibold">Welcome back</CardTitle>
-              <CardDescription>
-                Enter your credentials to access your dashboard
-              </CardDescription>
+              <CardDescription>Enter your credentials to access your dashboard</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -154,16 +154,6 @@ export default function LoginPage() {
                     'Sign in'
                   )}
                 </Button>
-
-                <div className="mt-6 rounded-lg bg-muted p-4">
-                  <p className="text-center text-sm text-muted-foreground">
-                    <span className="font-medium">Test credentials:</span>
-                    <br />
-                    Username: <code className="rounded bg-background px-1.5 py-0.5 font-mono text-sm">test</code>
-                    <br />
-                    Password: <code className="rounded bg-background px-1.5 py-0.5 font-mono text-sm">password</code>
-                  </p>
-                </div>
               </form>
             </CardContent>
           </Card>

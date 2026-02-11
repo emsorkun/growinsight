@@ -34,11 +34,11 @@ interface ChannelHeatMapProps {
 }
 
 // Component to handle heatmap layer (channel view only)
-function HeatmapLayer({ 
-  data, 
-  selectedChannel 
-}: { 
-  data: ChannelMapData[]; 
+function HeatmapLayer({
+  data,
+  selectedChannel,
+}: {
+  data: ChannelMapData[];
   selectedChannel: ChannelFilter;
 }) {
   const map = useMap();
@@ -69,11 +69,13 @@ function HeatmapLayer({
 
       // Normalize intensities
       const maxIntensity = Math.max(...heatData.map((h) => h[2]), 1);
-      const normalizedData = heatData.map((h) => [h[0], h[1], h[2] / maxIntensity] as [number, number, number]);
+      const normalizedData = heatData.map(
+        (h) => [h[0], h[1], h[2] / maxIntensity] as [number, number, number]
+      );
 
       // Create heat layer with custom gradient based on selected channel
       let gradient: Record<number, string>;
-      
+
       if (selectedChannel !== 'all') {
         const color = CHANNEL_COLORS[selectedChannel];
         gradient = {
@@ -187,7 +189,7 @@ export default function ChannelHeatMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
-        
+
         <FitBounds data={data} />
         <HeatmapLayer data={data} selectedChannel={selectedChannel} />
 
@@ -224,36 +226,38 @@ export default function ChannelHeatMap({
                 }}
                 eventHandlers={handlers}
               >
-            <Popup>
-              <div className="min-w-[200px] p-1">
-                <h3 className="font-semibold text-base mb-1">{d.area}</h3>
-                <p className="text-sm text-gray-500 mb-2">{d.city}</p>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Dominant:</span>
-                    <span 
-                      className="font-medium"
-                      style={{ color: CHANNEL_COLORS[d.dominantChannel] }}
-                    >
-                      {d.dominantChannel}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 pt-2 border-t">
-                  <p className="text-xs font-medium mb-1">Channel Share</p>
-                  {(['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'] as Channel[]).map((ch) => (
-                    <div key={ch} className="flex items-center gap-2 text-xs">
-                      <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: CHANNEL_COLORS[ch] }}
-                      />
-                      <span className="flex-1">{ch}</span>
-                      <span>{d.channelBreakdown[ch]?.share?.toFixed(1) || 0}%</span>
+                <Popup>
+                  <div className="min-w-[200px] p-1">
+                    <h3 className="font-semibold text-base mb-1">{d.area}</h3>
+                    <p className="text-sm text-gray-500 mb-2">{d.city}</p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Dominant:</span>
+                        <span
+                          className="font-medium"
+                          style={{ color: CHANNEL_COLORS[d.dominantChannel] }}
+                        >
+                          {d.dominantChannel}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </Popup>
+                    <div className="mt-2 pt-2 border-t">
+                      <p className="text-xs font-medium mb-1">Channel Share</p>
+                      {(['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'] as Channel[]).map(
+                        (ch) => (
+                          <div key={ch} className="flex items-center gap-2 text-xs">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: CHANNEL_COLORS[ch] }}
+                            />
+                            <span className="flex-1">{ch}</span>
+                            <span>{d.channelBreakdown[ch]?.share?.toFixed(1) || 0}%</span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </Popup>
               </CircleMarker>
             </Fragment>
           );
@@ -267,17 +271,13 @@ export default function ChannelHeatMap({
           <div className="space-y-1">
             {legendData.map(({ label, color }) => (
               <div key={label} className="flex items-center gap-2 text-xs">
-                <div 
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: color }}
-                />
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                 <span>{label}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-
     </div>
   );
 }

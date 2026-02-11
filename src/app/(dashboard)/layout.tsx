@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Sidebar, SidebarProvider } from '@/components/layout/sidebar';
 import { FilterOptionsProvider } from '@/components/providers/filter-options-provider';
 import { useAuthStore } from '@/store/auth-store';
+import { usePageViewTracking } from '@/lib/tracking-client';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setLoading, login, logout } = useAuthStore();
   const didRedirect = useRef(false);
+
+  // Track page views on route changes
+  usePageViewTracking();
 
   useEffect(() => {
     if (didRedirect.current) return;
@@ -24,10 +24,7 @@ export default function DashboardLayout({
         const result = await response.json();
 
         if (result.success && result.data?.user) {
-          const token = result.data.token ?? useAuthStore.getState().token;
-          if (token) {
-            login(token, result.data.user);
-          }
+          login(result.data.user);
         } else {
           didRedirect.current = true;
           logout();
@@ -50,9 +47,7 @@ export default function DashboardLayout({
       <FilterOptionsProvider>
         <div className="flex h-screen bg-background">
           <Sidebar />
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </FilterOptionsProvider>
     </SidebarProvider>

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { User, AuthState } from '@/types';
 
 interface AuthStore extends AuthState {
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   logout: () => void;
   setLoading: (isLoading: boolean) => void;
 }
@@ -16,9 +16,9 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       isLoading: true,
 
-      login: (token: string, user: User) =>
+      login: (user: User) =>
         set({
-          token,
+          token: null,
           user,
           isAuthenticated: true,
           isLoading: false,
@@ -37,7 +37,6 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: 'growinsight-auth',
       partialize: (state) => ({
-        token: state.token,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

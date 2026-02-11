@@ -1,4 +1,16 @@
-import type { SalesData, AggregatedData, MonthlyMarketShare, WeeklySalesData, WeeklyMarketShare, MarketShareByArea, MarketShareByCuisine, MarketShareByAreaExtended, CuisineDetailByArea, AreaMonthlyTrend, Channel } from '@/types';
+import type {
+  SalesData,
+  AggregatedData,
+  MonthlyMarketShare,
+  WeeklySalesData,
+  WeeklyMarketShare,
+  MarketShareByArea,
+  MarketShareByCuisine,
+  MarketShareByAreaExtended,
+  CuisineDetailByArea,
+  AreaMonthlyTrend,
+  Channel,
+} from '@/types';
 
 const CHANNELS: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
 
@@ -79,7 +91,10 @@ export function aggregateWeeklyByChannel(data: WeeklySalesData[]): AggregatedDat
 }
 
 export function calculateWeeklyMarketShare(data: WeeklySalesData[]): WeeklyMarketShare[] {
-  const weeklyMap = new Map<string, { weekStartDate: string; channelOrders: Map<Channel, number> }>();
+  const weeklyMap = new Map<
+    string,
+    { weekStartDate: string; channelOrders: Map<Channel, number> }
+  >();
 
   data.forEach((row) => {
     const key = `${row.year}-W${String(row.week).padStart(2, '0')}`;
@@ -90,7 +105,10 @@ export function calculateWeeklyMarketShare(data: WeeklySalesData[]): WeeklyMarke
       weeklyMap.set(key, { weekStartDate: row.weekStartDate, channelOrders: new Map() });
     }
     const weekData = weeklyMap.get(key)!;
-    weekData.channelOrders.set(channel, (weekData.channelOrders.get(channel) || 0) + (row.orders || 0));
+    weekData.channelOrders.set(
+      channel,
+      (weekData.channelOrders.get(channel) || 0) + (row.orders || 0)
+    );
   });
 
   return Array.from(weeklyMap.entries())
@@ -201,13 +219,13 @@ export function calculateMarketShareByCuisine(data: SalesData[]): MarketShareByC
 
 function normalizeChannel(channel: string): Channel | null {
   const normalized = channel?.toLowerCase();
-  
+
   const channelMapping: Record<string, Channel> = {
-    'talabat': 'Talabat',
-    'deliveroo': 'Deliveroo',
-    'careem': 'Careem',
-    'noon': 'Noon',
-    'keeta': 'Keeta',
+    talabat: 'Talabat',
+    deliveroo: 'Deliveroo',
+    careem: 'Careem',
+    noon: 'Noon',
+    keeta: 'Keeta',
   };
 
   return channelMapping[normalized] || null;
@@ -250,12 +268,15 @@ export function getSignalStrength(totalOrders: number, cuisineCount: number): nu
 }
 
 export function calculateMarketShareByAreaExtended(data: SalesData[]): MarketShareByAreaExtended[] {
-  const areaMap = new Map<string, {
-    city: string;
-    channelOrders: Map<Channel, number>;
-    cuisines: Set<string>;
-    totalOrders: number;
-  }>();
+  const areaMap = new Map<
+    string,
+    {
+      city: string;
+      channelOrders: Map<Channel, number>;
+      cuisines: Set<string>;
+      totalOrders: number;
+    }
+  >();
 
   data.forEach((row) => {
     const area = row.area;
@@ -272,7 +293,10 @@ export function calculateMarketShareByAreaExtended(data: SalesData[]): MarketSha
     }
 
     const areaData = areaMap.get(area)!;
-    areaData.channelOrders.set(channel, (areaData.channelOrders.get(channel) || 0) + (row.orders || 0));
+    areaData.channelOrders.set(
+      channel,
+      (areaData.channelOrders.get(channel) || 0) + (row.orders || 0)
+    );
     areaData.totalOrders += row.orders || 0;
     if (row.cuisine) {
       areaData.cuisines.add(row.cuisine);
@@ -304,15 +328,21 @@ export function calculateMarketShareByAreaExtended(data: SalesData[]): MarketSha
     });
 }
 
-export function calculateCuisineDetailByArea(data: SalesData[], targetArea: string): CuisineDetailByArea[] {
-  const cuisineMap = new Map<string, {
-    channelOrders: Map<Channel, number>;
-    totalOrders: number;
-  }>();
+export function calculateCuisineDetailByArea(
+  data: SalesData[],
+  targetArea: string
+): CuisineDetailByArea[] {
+  const cuisineMap = new Map<
+    string,
+    {
+      channelOrders: Map<Channel, number>;
+      totalOrders: number;
+    }
+  >();
 
   data.forEach((row) => {
     if (row.area !== targetArea) return;
-    
+
     const cuisine = row.cuisine;
     const channel = normalizeChannel(row.channel);
     if (!cuisine || !channel) return;
@@ -325,7 +355,10 @@ export function calculateCuisineDetailByArea(data: SalesData[], targetArea: stri
     }
 
     const cuisineData = cuisineMap.get(cuisine)!;
-    cuisineData.channelOrders.set(channel, (cuisineData.channelOrders.get(channel) || 0) + (row.orders || 0));
+    cuisineData.channelOrders.set(
+      channel,
+      (cuisineData.channelOrders.get(channel) || 0) + (row.orders || 0)
+    );
     cuisineData.totalOrders += row.orders || 0;
   });
 
@@ -348,12 +381,15 @@ export function calculateCuisineDetailByArea(data: SalesData[], targetArea: stri
     });
 }
 
-export function calculateAreaMonthlyTrend(data: SalesData[], targetArea: string): AreaMonthlyTrend[] {
+export function calculateAreaMonthlyTrend(
+  data: SalesData[],
+  targetArea: string
+): AreaMonthlyTrend[] {
   const monthlyMap = new Map<string, Map<Channel, number>>();
 
   data.forEach((row) => {
     if (row.area !== targetArea) return;
-    
+
     const month = row.month;
     const channel = normalizeChannel(row.channel);
     if (!month || !channel) return;

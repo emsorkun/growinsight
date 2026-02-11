@@ -9,14 +9,23 @@ import { CHANNEL_COLORS, type AggregatedData, type WeeklyMarketShare, type Chann
 import { formatCurrency, formatPercentage } from '@/lib/data-utils';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-const PieChartCard = dynamic(() => import('@/components/charts/pie-chart').then((m) => ({ default: m.PieChartCard })), {
-  loading: () => <ChartSkeleton />,
-});
-const BarChartCard = dynamic(() => import('@/components/charts/bar-chart').then((m) => ({ default: m.BarChartCard })), {
-  loading: () => <ChartSkeleton />,
-});
+const PieChartCard = dynamic(
+  () => import('@/components/charts/pie-chart').then((m) => ({ default: m.PieChartCard })),
+  {
+    loading: () => <ChartSkeleton />,
+  }
+);
+const BarChartCard = dynamic(
+  () => import('@/components/charts/bar-chart').then((m) => ({ default: m.BarChartCard })),
+  {
+    loading: () => <ChartSkeleton />,
+  }
+);
 const StackedBarChartCard = dynamic(
-  () => import('@/components/charts/stacked-bar-chart').then((m) => ({ default: m.StackedBarChartCard })),
+  () =>
+    import('@/components/charts/stacked-bar-chart').then((m) => ({
+      default: m.StackedBarChartCard,
+    })),
   { loading: () => <ChartSkeleton /> }
 );
 
@@ -56,7 +65,7 @@ export default function WeeklyFiguresPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { selectedCity, selectedArea, selectedCuisine, setOptions } = useFilterStore();
+  const { selectedCities, selectedAreas, selectedCuisines, setOptions } = useFilterStore();
 
   const fetchWeeklyData = useCallback(async () => {
     setIsLoading(true);
@@ -64,9 +73,9 @@ export default function WeeklyFiguresPage() {
 
     try {
       const params = new URLSearchParams();
-      if (selectedCity !== 'all') params.set('city', selectedCity);
-      if (selectedArea !== 'all') params.set('area', selectedArea);
-      if (selectedCuisine !== 'all') params.set('cuisine', selectedCuisine);
+      if (selectedCities.length > 0) params.set('city', selectedCities.join(','));
+      if (selectedAreas.length > 0) params.set('area', selectedAreas.join(','));
+      if (selectedCuisines.length > 0) params.set('cuisine', selectedCuisines.join(','));
 
       const response = await fetch(`/api/dashboard/weekly?${params.toString()}`);
       const result = await response.json();
@@ -83,7 +92,7 @@ export default function WeeklyFiguresPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCity, selectedArea, selectedCuisine, setOptions]);
+  }, [selectedCities, selectedAreas, selectedCuisines, setOptions]);
 
   useEffect(() => {
     fetchWeeklyData();
@@ -185,6 +194,12 @@ export default function WeeklyFiguresPage() {
     color: CHANNEL_COLORS[d.channel as Channel],
   }));
 
+  const aovAfterDiscountData = channelData.map((d) => ({
+    name: d.channel,
+    value: d.orders > 0 ? d.netSales / d.orders : 0,
+    color: CHANNEL_COLORS[d.channel as Channel],
+  }));
+
   return (
     <div className="flex flex-col">
       <Header title="Weekly Figures" subtitle="Last 12 weeks" />
@@ -229,15 +244,16 @@ export default function WeeklyFiguresPage() {
           />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
+          <BarChartCard title="ROAS by Channel" data={roasData} formatValue={(v) => v.toFixed(2)} />
           <BarChartCard
-            title="ROAS by Channel"
-            data={roasData}
-            formatValue={(v) => v.toFixed(2)}
+            title="Avg Basket Value by Channel"
+            data={aovData}
+            formatValue={(v) => formatCurrency(v)}
           />
           <BarChartCard
-            title="Average Order Value by Channel"
-            data={aovData}
+            title="Avg Order Value by Channel"
+            data={aovAfterDiscountData}
             formatValue={(v) => formatCurrency(v)}
           />
         </div>

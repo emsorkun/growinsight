@@ -1,6 +1,16 @@
 'use client';
 
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  LabelList,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BarChartData {
@@ -16,14 +26,14 @@ interface BarChartProps {
   formatValue?: (value: number) => string;
 }
 
-const CustomTooltip = ({ 
-  active, 
-  payload, 
+const CustomTooltip = ({
+  active,
+  payload,
   label,
-  formatValue 
-}: { 
-  active?: boolean; 
-  payload?: { value: number; payload: BarChartData }[]; 
+  formatValue,
+}: {
+  active?: boolean;
+  payload?: { value: number; payload: BarChartData }[];
   label?: string;
   formatValue?: (value: number) => string;
 }) => {
@@ -51,37 +61,47 @@ export function BarChartCard({ title, data, yAxisLabel, formatValue }: BarChartP
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis 
-                dataKey="name" 
+              <XAxis
+                dataKey="name"
                 tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={{ stroke: 'var(--border)' }}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={{ stroke: 'var(--border)' }}
-                label={yAxisLabel ? { 
-                  value: yAxisLabel, 
-                  angle: -90, 
-                  position: 'insideLeft',
-                  fill: 'var(--muted-foreground)',
-                  fontSize: 12,
-                } : undefined}
+                label={
+                  yAxisLabel
+                    ? {
+                        value: yAxisLabel,
+                        angle: -90,
+                        position: 'insideLeft',
+                        fill: 'var(--muted-foreground)',
+                        fontSize: 12,
+                      }
+                    : undefined
+                }
               />
               <Tooltip content={<CustomTooltip formatValue={formatValue} />} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
-                <LabelList 
-                  dataKey="value" 
-                  position="top" 
-                  formatter={(value) => typeof value === 'number' ? (formatValue ? formatValue(value) : value.toFixed(1)) : String(value ?? '')}
-                  style={{ 
-                    fill: 'var(--foreground)', 
+                <LabelList
+                  dataKey="value"
+                  position="top"
+                  formatter={(value) =>
+                    typeof value === 'number'
+                      ? formatValue
+                        ? formatValue(value)
+                        : value.toFixed(1)
+                      : String(value ?? '')
+                  }
+                  style={{
+                    fill: 'var(--foreground)',
                     fontSize: 11,
-                    fontWeight: 500 
+                    fontWeight: 500,
                   }}
                 />
               </Bar>

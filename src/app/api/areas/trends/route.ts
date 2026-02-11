@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const salesData = await fetchSalesData({ city, cuisine });
+    const salesData = await fetchSalesData({
+      cities: city ? [city] : undefined,
+      cuisines: cuisine ? [cuisine] : undefined,
+    });
     const monthlyTrend = calculateAreaMonthlyTrend(salesData, area);
 
     return NextResponse.json({

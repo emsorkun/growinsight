@@ -9,7 +9,11 @@ export async function GET(request: NextRequest) {
     const city = searchParams.get('city') || undefined;
     const area = searchParams.get('area') || undefined;
 
-    const salesData = await fetchSalesData({ month, city, area });
+    const salesData = await fetchSalesData({
+      months: month ? [month] : undefined,
+      cities: city ? [city] : undefined,
+      areas: area ? [area] : undefined,
+    });
     const marketShareByCuisine = calculateMarketShareByCuisine(salesData);
 
     return NextResponse.json({

@@ -11,14 +11,23 @@ import { formatCurrency, formatPercentage } from '@/lib/data-utils';
 import { getDashboardChartData } from '@/lib/chart-utils';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-const PieChartCard = dynamic(() => import('@/components/charts/pie-chart').then((m) => ({ default: m.PieChartCard })), {
-  loading: () => <ChartSkeleton />,
-});
-const BarChartCard = dynamic(() => import('@/components/charts/bar-chart').then((m) => ({ default: m.BarChartCard })), {
-  loading: () => <ChartSkeleton />,
-});
+const PieChartCard = dynamic(
+  () => import('@/components/charts/pie-chart').then((m) => ({ default: m.PieChartCard })),
+  {
+    loading: () => <ChartSkeleton />,
+  }
+);
+const BarChartCard = dynamic(
+  () => import('@/components/charts/bar-chart').then((m) => ({ default: m.BarChartCard })),
+  {
+    loading: () => <ChartSkeleton />,
+  }
+);
 const StackedBarChartCard = dynamic(
-  () => import('@/components/charts/stacked-bar-chart').then((m) => ({ default: m.StackedBarChartCard })),
+  () =>
+    import('@/components/charts/stacked-bar-chart').then((m) => ({
+      default: m.StackedBarChartCard,
+    })),
   { loading: () => <ChartSkeleton /> }
 );
 
@@ -54,16 +63,16 @@ interface DashboardData {
 }
 
 async function fetchDashboardData(filters: {
-  month: string;
-  city: string;
-  area: string;
-  cuisine: string;
+  months: string[];
+  cities: string[];
+  areas: string[];
+  cuisines: string[];
 }): Promise<DashboardData> {
   const params = new URLSearchParams();
-  if (filters.month !== 'all') params.set('month', filters.month);
-  if (filters.city !== 'all') params.set('city', filters.city);
-  if (filters.area !== 'all') params.set('area', filters.area);
-  if (filters.cuisine !== 'all') params.set('cuisine', filters.cuisine);
+  if (filters.months.length > 0) params.set('month', filters.months.join(','));
+  if (filters.cities.length > 0) params.set('city', filters.cities.join(','));
+  if (filters.areas.length > 0) params.set('area', filters.areas.join(','));
+  if (filters.cuisines.length > 0) params.set('cuisine', filters.cuisines.join(','));
 
   const response = await fetch(`/api/dashboard?${params.toString()}`);
   const result = await response.json();
@@ -75,22 +84,17 @@ async function fetchDashboardData(filters: {
 }
 
 export default function DashboardPage() {
-  const { selectedMonth, selectedCity, selectedArea, selectedCuisine, setOptions } = useFilterStore();
+  const { selectedMonths, selectedCities, selectedAreas, selectedCuisines, setOptions } =
+    useFilterStore();
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['dashboard', selectedMonth, selectedCity, selectedArea, selectedCuisine],
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['dashboard', selectedMonths, selectedCities, selectedAreas, selectedCuisines],
     queryFn: () =>
       fetchDashboardData({
-        month: selectedMonth,
-        city: selectedCity,
-        area: selectedArea,
-        cuisine: selectedCuisine,
+        months: selectedMonths,
+        cities: selectedCities,
+        areas: selectedAreas,
+        cuisines: selectedCuisines,
       }),
     retry: 1,
   });
@@ -141,7 +145,9 @@ export default function DashboardPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <p className="text-destructive">{error instanceof Error ? error.message : 'An error occurred'}</p>
+          <p className="text-destructive">
+            {error instanceof Error ? error.message : 'An error occurred'}
+          </p>
           <button onClick={() => refetch()} className="mt-4 text-primary underline">
             Try again
           </button>
@@ -157,7 +163,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col">
       <Header title="Dashboard" subtitle="Food delivery analytics and insights" />
-      
+
       <div className="flex-1 space-y-6 p-4 lg:p-6">
         <FilterBar />
 
@@ -166,8 +172,8 @@ export default function DashboardPage() {
             className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-900 dark:border-amber-600 dark:bg-amber-950/50 dark:text-amber-100"
             role="alert"
           >
-            <strong>Demo mode</strong> – Real data is unavailable. You are viewing sample data. Error:{' '}
-            {error instanceof Error ? error.message : 'Unknown error'}{' '}
+            <strong>Demo mode</strong> – Real data is unavailable. You are viewing sample data.
+            Error: {error instanceof Error ? error.message : 'Unknown error'}{' '}
             <button onClick={() => refetch()} className="ml-2 underline">
               Try again
             </button>
@@ -181,10 +187,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 2: Stacked Bar Chart */}
-        <StackedBarChartCard
-          title="Monthly Market Share (Orders) by Channel"
-          data={monthlyData}
-        />
+        <StackedBarChartCard title="Monthly Market Share (Orders) by Channel" data={monthlyData} />
 
         {/* Row 3: Spend Analysis */}
         <div className="grid gap-6 md:grid-cols-3">
@@ -209,15 +212,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 4: ROAS and AOV */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
           <BarChartCard
             title="ROAS by Channel"
             data={chartData.roas}
             formatValue={(v) => v.toFixed(2)}
           />
           <BarChartCard
-            title="Average Order Value by Channel"
+            title="Avg Basket Value by Channel"
             data={chartData.aov}
+            formatValue={(v) => formatCurrency(v)}
+          />
+          <BarChartCard
+            title="Avg Order Value by Channel"
+            data={chartData.aovAfterDiscount}
             formatValue={(v) => formatCurrency(v)}
           />
         </div>
@@ -229,7 +237,18 @@ export default function DashboardPage() {
 // Mock data for demo purposes
 function getMockData(): DashboardData {
   const channels: Channel[] = ['Talabat', 'Deliveroo', 'Careem', 'Noon', 'Keeta'];
-  const months = ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10'];
+  const months = [
+    '2025-01',
+    '2025-02',
+    '2025-03',
+    '2025-04',
+    '2025-05',
+    '2025-06',
+    '2025-07',
+    '2025-08',
+    '2025-09',
+    '2025-10',
+  ];
 
   const channelData: AggregatedData[] = channels.map((channel, index) => {
     const baseOrders = [50000, 30000, 25000, 15000, 10000][index];

@@ -43,5 +43,10 @@ export function getDashboardChartData(channelData: AggregatedData[]) {
       value: d.aov,
       color: CHANNEL_COLORS[d.channel as Channel],
     })),
+    aovAfterDiscount: channelData.map((d) => ({
+      name: d.channel,
+      value: d.orders > 0 ? d.netSales / d.orders : 0,
+      color: CHANNEL_COLORS[d.channel as Channel],
+    })),
   };
 }

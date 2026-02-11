@@ -64,8 +64,8 @@ export default function MissingBrandsPage() {
               i < fullStars
                 ? 'fill-yellow-400 text-yellow-400'
                 : i === fullStars && hasHalfStar
-                ? 'fill-yellow-400/50 text-yellow-400'
-                : 'fill-muted text-muted'
+                  ? 'fill-yellow-400/50 text-yellow-400'
+                  : 'fill-muted text-muted'
             }`}
           />
         ))}

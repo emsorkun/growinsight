@@ -11,35 +11,37 @@ function getProjectId(): string {
 function getBigQueryClient(): BigQuery {
   if (!bigquery) {
     const projectId = getProjectId();
-    
+
     if (!projectId) {
-      console.error('Missing BigQuery project ID. Set BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID.');
-      throw new Error('BigQuery configuration error: Missing project ID. Please set BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID.');
+      console.error(
+        'Missing BigQuery project ID. Set BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID.'
+      );
+      throw new Error(
+        'BigQuery configuration error: Missing project ID. Please set BIGQUERY_PROJECT_ID or GOOGLE_CLOUD_PROJECT_ID.'
+      );
     }
-    
+
     // Support both file path (local) and JSON string (Railway/cloud) credentials
     const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
     const credentialsFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    
+
     console.log('BigQuery initialization:', {
       projectId,
-      hasCredentialsJson: !!credentialsJson,
-      hasCredentialsFile: !!credentialsFile,
-      credentialsJsonLength: credentialsJson?.length || 0,
+      credentialSource: credentialsJson ? 'env-json' : credentialsFile ? 'file' : 'default',
     });
-    
+
     if (credentialsJson) {
       // Parse JSON string credentials (for Railway/cloud deployments)
       try {
         const credentials = JSON.parse(credentialsJson);
-        
+
         // Validate required fields in credentials
         if (!credentials.client_email || !credentials.private_key) {
           throw new Error('Invalid credentials: missing client_email or private_key');
         }
-        
-        console.log('Using GOOGLE_CREDENTIALS_JSON with client_email:', credentials.client_email);
-        
+
+        console.log('BigQuery: using GOOGLE_CREDENTIALS_JSON');
+
         bigquery = new BigQuery({
           projectId,
           credentials,
@@ -47,11 +49,13 @@ function getBigQueryClient(): BigQuery {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
         console.error('Failed to parse GOOGLE_CREDENTIALS_JSON:', errorMessage);
-        throw new Error(`BigQuery configuration error: Invalid GOOGLE_CREDENTIALS_JSON format - ${errorMessage}`);
+        throw new Error(
+          `BigQuery configuration error: Invalid GOOGLE_CREDENTIALS_JSON format - ${errorMessage}`
+        );
       }
     } else if (credentialsFile) {
       // Use file path (for local development with Docker)
-      console.log('Using GOOGLE_APPLICATION_CREDENTIALS file:', credentialsFile);
+      console.log('BigQuery: using GOOGLE_APPLICATION_CREDENTIALS file');
       bigquery = new BigQuery({
         projectId,
         keyFilename: credentialsFile,
@@ -59,7 +63,9 @@ function getBigQueryClient(): BigQuery {
     } else {
       // Fall back to default credentials (GCP environment)
       console.log('Using default GCP credentials (no explicit credentials provided)');
-      console.warn('Warning: No explicit credentials provided. This may fail outside of GCP environment.');
+      console.warn(
+        'Warning: No explicit credentials provided. This may fail outside of GCP environment.'
+      );
       bigquery = new BigQuery({ projectId });
     }
   }
@@ -67,7 +73,20 @@ function getBigQueryClient(): BigQuery {
 }
 
 /** month_year in DB is "January-2025"; we use "YYYY-MM" in filters and charts. */
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 function toYYYYMM(year: string, monthPart: string): string {
   const n = parseInt(monthPart, 10);
@@ -93,40 +112,63 @@ function parseYYYYMMForFilter(yyyyMm: string): { year: string; monthParts: strin
   };
 }
 
+/** Check if a YYYY-MM month is fully completed (all its days have passed). */
+function isCompletedMonth(yyyyMm: string): boolean {
+  const [y, m] = yyyyMm.split('-').map(Number);
+  if (!y || !m || m < 1 || m > 12) return false;
+  // First day of the NEXT month; if today >= that date, the month is complete.
+  // JS Date months are 0-indexed, so passing m (1-indexed) gives the next month.
+  const firstOfNextMonth = new Date(y, m, 1);
+  return new Date() >= firstOfNextMonth;
+}
+
 export async function fetchSalesData(filters?: {
-  month?: string;
-  city?: string;
-  area?: string;
-  cuisine?: string;
+  months?: string[];
+  cities?: string[];
+  areas?: string[];
+  cuisines?: string[];
 }): Promise<SalesData[]> {
   const client = getBigQueryClient();
 
-  const yearForFilter =
-    filters?.month && filters.month !== 'all'
-      ? parseYYYYMMForFilter(filters.month).year
-      : '';
-  const yearValue = yearForFilter || '2025';
-  const hasMonthFilter = filters?.month && filters.month !== 'all';
-  const { monthParts } = hasMonthFilter ? parseYYYYMMForFilter(filters.month!) : { monthParts: [] };
+  const hasMonthFilter = filters?.months && filters.months.length > 0;
 
-  const conditions: string[] = ['br.country_id = 1', "SPLIT(s.month_year, '-')[OFFSET(1)] = @yearValue"];
-  const params: Record<string, string | string[]> = { yearValue };
+  const conditions: string[] = ['br.country_id = 1'];
+  const params: Record<string, string | string[]> = {};
 
-  if (hasMonthFilter && monthParts.length > 0) {
-    conditions.push("SPLIT(s.month_year, '-')[OFFSET(0)] IN UNNEST(@monthParts)");
-    params.monthParts = monthParts;
+  if (hasMonthFilter) {
+    // Build combined month-part lookups for all selected months
+    const allYears: string[] = [];
+    const allMonthParts: string[] = [];
+    for (const m of filters.months!) {
+      const { year, monthParts } = parseYYYYMMForFilter(m);
+      if (year && !allYears.includes(year)) allYears.push(year);
+      for (const mp of monthParts) {
+        if (!allMonthParts.includes(mp)) allMonthParts.push(mp);
+      }
+    }
+    if (allYears.length > 0) {
+      conditions.push("SPLIT(s.month_year, '-')[OFFSET(1)] IN UNNEST(@yearValues)");
+      params.yearValues = allYears;
+    }
+    if (allMonthParts.length > 0) {
+      conditions.push("SPLIT(s.month_year, '-')[OFFSET(0)] IN UNNEST(@monthParts)");
+      params.monthParts = allMonthParts;
+    }
+  } else {
+    // "All months" – data from 2025 onward; incomplete-month rows are filtered out in JS below
+    conditions.push("CAST(SPLIT(s.month_year, '-')[OFFSET(1)] AS INT64) >= 2025");
   }
-  if (filters?.city && filters.city !== 'all') {
-    conditions.push('gl.clean_city = @city');
-    params.city = filters.city;
+  if (filters?.cities && filters.cities.length > 0) {
+    conditions.push('gl.clean_city IN UNNEST(@cities)');
+    params.cities = filters.cities;
   }
-  if (filters?.area && filters.area !== 'all') {
-    conditions.push('gl.clean_area = @area');
-    params.area = filters.area;
+  if (filters?.areas && filters.areas.length > 0) {
+    conditions.push('gl.clean_area IN UNNEST(@areas)');
+    params.areas = filters.areas;
   }
-  if (filters?.cuisine && filters.cuisine !== 'all') {
-    conditions.push('cu.name = @cuisine');
-    params.cuisine = filters.cuisine;
+  if (filters?.cuisines && filters.cuisines.length > 0) {
+    conditions.push('cu.name IN UNNEST(@cuisines)');
+    params.cuisines = filters.cuisines;
   }
 
   const query = `
@@ -165,10 +207,14 @@ export async function fetchSalesData(filters?: {
 
   try {
     const [rows] = await client.query({ query, params });
-    const list = (rows as { month: string; year: string; [k: string]: unknown }[]).map((row) => ({
+    let list = (rows as { month: string; year: string; [k: string]: unknown }[]).map((row) => ({
       ...row,
       month: toYYYYMM(String(row.year), String(row.month)),
     }));
+    // When showing all months, exclude the current (incomplete) month
+    if (!hasMonthFilter) {
+      list = list.filter((row) => isCompletedMonth(row.month));
+    }
     return list as SalesData[];
   } catch (error) {
     console.error('BigQuery error:', error);
@@ -178,9 +224,9 @@ export async function fetchSalesData(filters?: {
 
 /** Last 12 weeks only. Uses l3_legacy_weekly_sales + l3_legacy_weekly_ad_campaigns. */
 export async function fetchWeeklySalesData(filters?: {
-  city?: string;
-  area?: string;
-  cuisine?: string;
+  cities?: string[];
+  areas?: string[];
+  cuisines?: string[];
 }): Promise<WeeklySalesData[]> {
   const client = getBigQueryClient();
 
@@ -188,18 +234,18 @@ export async function fetchWeeklySalesData(filters?: {
     'br.country_id = 1',
     "PARSE_DATE('%d-%m-%Y', s.week_start_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 WEEK)",
   ];
-  const params: Record<string, string> = {};
-  if (filters?.city && filters.city !== 'all') {
-    conditions.push('l.clean_city = @city');
-    params.city = filters.city;
+  const params: Record<string, string | string[]> = {};
+  if (filters?.cities && filters.cities.length > 0) {
+    conditions.push('l.clean_city IN UNNEST(@cities)');
+    params.cities = filters.cities;
   }
-  if (filters?.area && filters.area !== 'all') {
-    conditions.push('l.clean_area = @area');
-    params.area = filters.area;
+  if (filters?.areas && filters.areas.length > 0) {
+    conditions.push('l.clean_area IN UNNEST(@areas)');
+    params.areas = filters.areas;
   }
-  if (filters?.cuisine && filters.cuisine !== 'all') {
-    conditions.push('cu.name = @cuisine');
-    params.cuisine = filters.cuisine;
+  if (filters?.cuisines && filters.cuisines.length > 0) {
+    conditions.push('cu.name IN UNNEST(@cuisines)');
+    params.cuisines = filters.cuisines;
   }
 
   const query = `
@@ -237,7 +283,10 @@ export async function fetchWeeklySalesData(filters?: {
   `;
 
   try {
-    const [rows] = await client.query({ query, params: Object.keys(params).length > 0 ? params : undefined });
+    const [rows] = await client.query({
+      query,
+      params: Object.keys(params).length > 0 ? params : undefined,
+    });
     return rows as WeeklySalesData[];
   } catch (error) {
     console.error('BigQuery error (weekly):', error);
@@ -259,7 +308,8 @@ export async function fetchFilterOptions(): Promise<{
       FROM \`vpc-host-prod-fn204-ex958.aisha.l4_legacy_monthly_sales\` AS s
       LEFT JOIN \`vpc-host-prod-fn204-ex958.growdash_postgresql.public_brands\` AS br
         ON CAST(s.brand_id AS INT64) = br.id
-      WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '2025'
+      WHERE br.country_id = 1
+        AND CAST(SPLIT(s.month_year, "-")[OFFSET(1)] AS INT64) >= 2025
       ORDER BY year, month
     `,
     cities: `
@@ -271,7 +321,9 @@ export async function fetchFilterOptions(): Promise<{
         ON CAST(s.brand_id AS INT64) = br.id
       LEFT JOIN \`vpc-host-prod-fn204-ex958.growinsight.l3_growinsight_locations\` AS gl
         ON b.location_id = gl.location_id
-      WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '2025' AND gl.clean_city IS NOT NULL
+      WHERE br.country_id = 1
+        AND CAST(SPLIT(s.month_year, "-")[OFFSET(1)] AS INT64) >= 2025
+        AND gl.clean_city IS NOT NULL
       ORDER BY city
     `,
     areas: `
@@ -283,7 +335,9 @@ export async function fetchFilterOptions(): Promise<{
         ON CAST(s.brand_id AS INT64) = br.id
       LEFT JOIN \`vpc-host-prod-fn204-ex958.growinsight.l3_growinsight_locations\` AS gl
         ON b.location_id = gl.location_id
-      WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '2025' AND gl.clean_area IS NOT NULL
+      WHERE br.country_id = 1
+        AND CAST(SPLIT(s.month_year, "-")[OFFSET(1)] AS INT64) >= 2025
+        AND gl.clean_area IS NOT NULL
       ORDER BY area
     `,
     cuisines: `
@@ -293,7 +347,9 @@ export async function fetchFilterOptions(): Promise<{
         ON CAST(s.brand_id AS INT64) = br.id
       LEFT JOIN \`vpc-host-prod-fn204-ex958.growdash_postgresql.public_cuisines\` AS cu
         ON CAST(br.cuisine_id AS INT64) = cu.id
-      WHERE br.country_id = 1 AND SPLIT(s.month_year, "-")[OFFSET(1)] = '2025' AND cu.name IS NOT NULL
+      WHERE br.country_id = 1
+        AND CAST(SPLIT(s.month_year, "-")[OFFSET(1)] AS INT64) >= 2025
+        AND cu.name IS NOT NULL
       ORDER BY cuisine
     `,
   };
@@ -309,6 +365,7 @@ export async function fetchFilterOptions(): Promise<{
     return {
       months: (monthsResult[0] as { month: string; year: string }[])
         .map((row) => toYYYYMM(row.year, row.month))
+        .filter(isCompletedMonth)
         .sort(),
       cities: citiesResult[0].map((row: { city: string }) => row.city),
       areas: areasResult[0].map((row: { area: string }) => row.area),
@@ -320,14 +377,16 @@ export async function fetchFilterOptions(): Promise<{
   }
 }
 
-export async function fetchMissingBrands(): Promise<{
-  id: string;
-  name: string;
-  cuisine: string;
-  location: string;
-  rating: number;
-  locationCount: number;
-}[]> {
+export async function fetchMissingBrands(): Promise<
+  {
+    id: string;
+    name: string;
+    cuisine: string;
+    location: string;
+    rating: number;
+    locationCount: number;
+  }[]
+> {
   const client = getBigQueryClient();
 
   const query = `
@@ -366,14 +425,19 @@ export async function fetchMissingBrands(): Promise<{
 
   try {
     const [rows] = await client.query({ query });
-    return rows.map((row: { name: string; cuisine: string; location: string; locationCount: number }, index: number) => ({
-      id: `brand-${index}`,
-      name: row.name || 'Unknown',
-      cuisine: row.cuisine || 'Unknown',
-      location: row.location || 'Unknown',
-      rating: 0, // Placeholder until rating data is available from a source
-      locationCount: Number(row.locationCount) || 1,
-    }));
+    return rows.map(
+      (
+        row: { name: string; cuisine: string; location: string; locationCount: number },
+        index: number
+      ) => ({
+        id: `brand-${index}`,
+        name: row.name || 'Unknown',
+        cuisine: row.cuisine || 'Unknown',
+        location: row.location || 'Unknown',
+        rating: 0, // Placeholder until rating data is available from a source
+        locationCount: Number(row.locationCount) || 1,
+      })
+    );
   } catch (error) {
     console.error('BigQuery error fetching missing brands:', error);
     throw error;

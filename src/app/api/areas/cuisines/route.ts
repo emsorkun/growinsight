@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const salesData = await fetchSalesData({ month, city });
+    const salesData = await fetchSalesData({
+      months: month ? [month] : undefined,
+      cities: city ? [city] : undefined,
+    });
     const cuisineDetails = calculateCuisineDetailByArea(salesData, area);
 
     return NextResponse.json({
