@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Map,
   CalendarDays,
+  Pen,
+  Newspaper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -26,6 +28,8 @@ const navigation = [
   { name: 'Area Level', href: '/area-level', icon: MapPin },
   { name: 'Channel Map', href: '/channel-map', icon: Map },
   { name: 'Cuisine Level', href: '/cuisine-level', icon: UtensilsCrossed },
+  { name: 'LinkedIn Content', href: '/linkedin-content', icon: Pen },
+  { name: 'PR Content', href: '/pr-content', icon: Newspaper },
 ];
 
 // Context for sidebar state
