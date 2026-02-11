@@ -570,7 +570,7 @@ function PRArticle({
           <h1>${headline}</h1>
           <div class="subheadline">${subheadline}</div>
           <hr/>
-          ${articleRef.current.innerHTML.replace(/<button[^>]*>.*?<\/button>/gs, '').replace(/<svg[^>]*>.*?<\/svg>/gs, '').replace(/<figure[^>]*>.*?<\/figure>/gs, '<p style="color:#999;font-style:italic;">[Chart/Figure — see digital version]</p>')}
+          ${articleRef.current.innerHTML.replace(/<button[^>]*>[\s\S]*?<\/button>/g, '').replace(/<svg[^>]*>[\s\S]*?<\/svg>/g, '').replace(/<figure[^>]*>[\s\S]*?<\/figure>/g, '<p style="color:#999;font-style:italic;">[Chart/Figure — see digital version]</p>')}
           <hr/>
           <div class="publication">Prepared for Caterer Middle East | ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
         </body>
